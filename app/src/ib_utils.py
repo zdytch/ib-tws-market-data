@@ -1,6 +1,6 @@
 from typing import Union
 from ib_insync import BarData
-from .schemas import Bar, Timeframe
+from schemas import Bar, Timeframe
 from datetime import datetime, date, time
 import math
 import pytz
@@ -35,7 +35,7 @@ def duration_to_ib(from_dt: datetime, to_dt: datetime) -> str:
     return duration
 
 
-def timestamp_from_ib(dt: Union[datetime, date]) -> datetime:
+def timestamp_from_ib(dt: Union[datetime, date]) -> int:
     if type(dt) is date:
         date_time = pytz.utc.localize(datetime.combine(dt, time(0, 0)))
     elif type(dt) is datetime:
@@ -43,7 +43,7 @@ def timestamp_from_ib(dt: Union[datetime, date]) -> datetime:
     else:
         raise ValueError(f'Cannot convert datetime {dt} from IB')
 
-    return date_time
+    return int(date_time.timestamp())
 
 
 def bar_from_ib(ib_bar: BarData, volume_multiplier: int) -> Bar:
