@@ -1,56 +1,27 @@
-from schemas import InstrumentType, Exchange, Bar, ChartData
+from schemas import Timeframe, InstrumentType, Exchange, Bar, ChartData
+from ib_connector import IBConnector
+from datetime import datetime
+import pytz
+
+ibc = IBConnector()
 
 
-def get_instrument_type_by_exchange(exchange: Exchange) -> InstrumentType:
-    if exchange in (Exchange.NASDAQ, Exchange.NYSE):
-        instrument_type = InstrumentType.STOCK
-    elif exchange in (Exchange.GLOBEX, Exchange.ECBOT, Exchange.NYMEX):
-        instrument_type = InstrumentType.FUTURE
-    else:
-        raise ValueError(f'Cannot get instrument type, exchange unknown: {exchange}')
-
-    return instrument_type
-
-
-async def get_symbol_info(ticker: str) -> dict:
+async def get_historical_bars(
+    ticker: str, timeframe: Timeframe, from_ts: int, to_ts: int, is_chart_format: bool
+) -> list[Bar]:
     exchange, symbol = tuple(ticker.split(':'))
+    instrument_type = _get_instrument_type_by_exchange(Exchange(exchange))
+    from_dt = datetime.fromtimestamp(from_ts, pytz.utc)
+    to_dt = datetime.fromtimestamp(to_ts, pytz.utc)
 
-    # instrument = await instrument_services.get_instrument_by_ticker(ticker)
-    # instrument_type = chart_utils.convert_instrument_type_to_chart(instrument.type)
-    # session, timezone = chart_utils.get_session_and_timezone(instrument.exchange)
-    # price_scale = 10 ** abs(instrument.tick_size.normalize().as_tuple().exponent)
-    # min_movement = int(instrument.tick_size * price_scale)
-
-    return {
-        'name': ticker,
-        'ticker': ticker,
-        # 'type': instrument_type,
-        'description': 'Description',
-        # 'exchange': instrument.exchange,
-        # 'listed_exchange': instrument.exchange,
-        'session': '1700-1600',
-        'timezone': 'America/Chicago',
-        # 'currency_code': 'USD',
-        'has_daily': True,
-        'has_intraday': True,
-        'minmov': 1,
-        'pricescale': 100,
-    }
+    return await ibc.get_historical_bars(
+        symbol, exchange, instrument_type, timeframe, from_dt, to_dt
+    )
 
 
-def get_config() -> dict:
-    return {
-        'supported_resolutions': ['1', '5', '30', '1D'],
-        'supports_search': True,
-        'supports_group_request': False,
-        'supports_marks': False,
-        'supports_timescale_marks': False,
-    }
-
-
-def convert_bar_list_to_chart_data(bar_list: list[Bar]) -> ChartData:
-    # chart_data = {'t': [], 'h': [], 'l': [], 'o': [], 'c': [], 'v': [], 's': 'no_data'}
+def get_chart_data_from_bars(bar_list: list[Bar]) -> ChartData:
     chart_data = ChartData()
+
     for bar in bar_list:
         chart_data.o.append(bar.o)
         chart_data.h.append(bar.h)
@@ -62,3 +33,14 @@ def convert_bar_list_to_chart_data(bar_list: list[Bar]) -> ChartData:
         chart_data.s = 'ok'
 
     return chart_data
+
+
+def _get_instrument_type_by_exchange(exchange: Exchange) -> InstrumentType:
+    if exchange in (Exchange.NASDAQ, Exchange.NYSE):
+        instrument_type = InstrumentType.STOCK
+    elif exchange in (Exchange.GLOBEX, Exchange.ECBOT, Exchange.NYMEX):
+        instrument_type = InstrumentType.FUTURE
+    else:
+        raise ValueError(f'Cannot get instrument type, exchange unknown: {exchange}')
+
+    return instrument_type
