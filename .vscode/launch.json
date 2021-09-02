@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Trixter Docker",
+      "name": "Debug Docker",
       "type": "python",
       "request": "attach",
       "connect": {
