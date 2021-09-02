@@ -7,7 +7,7 @@ ibc = IBConnector()
 
 
 async def get_historical_bars(
-    ticker: str, timeframe: Timeframe, from_ts: int, to_ts: int, is_chart_format: bool
+    ticker: str, timeframe: Timeframe, from_ts: int, to_ts: int
 ) -> list[Bar]:
     exchange, symbol = tuple(ticker.split(':'))
     instrument_type = _get_instrument_type_by_exchange(Exchange(exchange))

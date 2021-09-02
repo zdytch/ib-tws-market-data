@@ -15,9 +15,7 @@ async def get_historical_data(
     to: int = ...,
     chart_format: bool = False,
 ):
-    bars = await services.get_historical_bars(
-        ticker, timeframe, from_, to, chart_format
-    )
+    bars = await services.get_historical_bars(ticker, timeframe, from_, to)
 
     if chart_format:
         return services.get_chart_data_from_bars(bars)
