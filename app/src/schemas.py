@@ -8,9 +8,9 @@ class Timeframe(str, Enum):
     M15 = '15'
     M30 = '30'
     M60 = '60'
-    DAY = '1D'
-    WEEK = '1W'
-    MONTH = '1M'
+    DAY = 'D'
+    WEEK = 'W'
+    MONTH = 'M'
 
 
 class InstrumentType(str, Enum):
