@@ -33,3 +33,13 @@ class Bar(BaseModel):
     c: float
     v: int
     t: int
+
+
+class ChartData(BaseModel):
+    o: list[float] = []
+    h: list[float] = []
+    l: list[float] = []
+    c: list[float] = []
+    v: list[int] = []
+    t: list[int] = []
+    s: str = 'no_data'
