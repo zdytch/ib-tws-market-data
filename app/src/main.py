@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import api_router
 from config import settings
+import debugpy
 
 
 app = FastAPI()
@@ -17,17 +18,7 @@ app.add_middleware(
 app.include_router(api_router, prefix=settings.API_URL_PREFIX)
 
 
-# @app.on_event('startup')
-# async def startup():
-#     db.metadata.create_all(db.engine)  # TODO: Use migrations instead?
-#     await db.database.connect()
-
-#     if settings.DEBUG:
-#         import debugpy
-
-#         debugpy.listen(('0.0.0.0', 8888))
-
-
-# @app.on_event('shutdown')
-# async def shutdown():
-#     await db.database.disconnect()
+@app.on_event('startup')
+async def startup():
+    if settings.DEBUG:
+        debugpy.listen(('0.0.0.0', 8888))
