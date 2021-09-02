@@ -24,26 +24,33 @@ class IBConnector:
         return self._ib.isConnected()
 
     async def get_historical_bars(
-        self, timeframe: Timeframe, from_dt: datetime, to_dt: datetime
+        self,
+        symbol: str,
+        exchange: str,
+        instrument_type: InstrumentType,
+        timeframe: Timeframe,
+        from_dt: datetime,
+        to_dt: datetime,
     ) -> list[Bar]:
         await self._connect()
 
         bars = []
         if self.is_connected:
-            contract = await self._get_contract(InstrumentType.FUTURE, 'ES', 'GLOBEX')
-            # is_stock = instrument.type == InstrumentType.STOCK
+            contract = await self._get_contract(InstrumentType.FUTURE, symbol, exchange)
+            is_stock = instrument_type == InstrumentType.STOCK
+            volume_multiplier = 100 if is_stock else 1
+
             ib_bars = await self._ib.reqHistoricalDataAsync(
                 contract=contract,
                 endDateTime=to_dt,
                 durationStr=ib_utils.duration_to_ib(from_dt, to_dt),
                 barSizeSetting=ib_utils.timeframe_to_ib(timeframe),
                 whatToShow='TRADES',
-                useRTH=True,  # is_stock,
+                useRTH=is_stock,
                 formatDate=2,
                 keepUpToDate=False,
             )
-            # volume_multiplier = 100 if is_stock else 1
-            volume_multiplier = 1
+
             for ib_bar in ib_bars:
                 bar = ib_utils.bar_from_ib(ib_bar, volume_multiplier)
                 bars.append(bar)
