@@ -2,3 +2,4 @@ fastapi
 uvicorn
 ib_insync
 loguru
+pytz
