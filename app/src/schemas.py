@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from decimal import Decimal
 from enum import Enum
 
 
@@ -20,9 +19,9 @@ class InstrumentType(str, Enum):
 
 
 class Bar(BaseModel):
-    o: Decimal
-    h: Decimal
-    l: Decimal
-    c: Decimal
+    o: float
+    h: float
+    l: float
+    c: float
     v: int
     t: int
