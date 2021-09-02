@@ -1,0 +1,18 @@
+# Trixter #
+*.log
+
+# Python #
+*.py[cod] 
+*$py.class
+
+# IDE #
+.idea
+.vscode/settings.json
+
+# Docker #
+.env
+.env.prod
+
+# Celery #
+celerybeat-schedule
+celerybeat.pid

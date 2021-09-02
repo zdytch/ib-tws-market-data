@@ -1,0 +1,19 @@
+version: '3.7'
+
+services:
+  dataserver-app:
+    volumes:
+      - ./app/src:/src
+    ports:
+      - 80:8000
+      - 8888:8888
+
+  dataserver-db:
+    ports:
+      - 27017:27017
+
+  dataserver-ib:
+    environment:
+      - VNC_PASSWORD=$IB_VNC_PASSWORD
+    ports:
+      - 5900:5900
