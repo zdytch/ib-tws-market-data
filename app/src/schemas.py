@@ -18,6 +18,14 @@ class InstrumentType(str, Enum):
     FUTURE = 'FUT'
 
 
+class Exchange(str, Enum):
+    NYSE = 'NYSE'
+    NASDAQ = 'NASDAQ'
+    GLOBEX = 'GLOBEX'
+    NYMEX = 'NYMEX'
+    ECBOT = 'ECBOT'
+
+
 class Bar(BaseModel):
     o: float
     h: float
