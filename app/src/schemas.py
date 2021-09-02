@@ -8,9 +8,9 @@ class Timeframe(str, Enum):
     M15 = '15'
     M30 = '30'
     M60 = '60'
-    DAY = '1D'
-    WEEK = '1W'
-    MONTH = '1M'
+    DAY = 'D'
+    WEEK = 'W'
+    MONTH = 'M'
 
 
 class InstrumentType(str, Enum):
@@ -33,3 +33,13 @@ class Bar(BaseModel):
     c: float
     v: int
     t: int
+
+
+class ChartData(BaseModel):
+    o: list[float] = []
+    h: list[float] = []
+    l: list[float] = []
+    c: list[float] = []
+    v: list[int] = []
+    t: list[int] = []
+    s: str = 'no_data'
