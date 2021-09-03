@@ -15,8 +15,6 @@ async def get_historical_bars(
     exchange, symbol = tuple(ticker.split(':'))
     exchange = Exchange(exchange)
 
-    await _save_chunk(symbol, exchange, timeframe, from_ts, to_ts)
-
     cached_bars = await _get_bars_from_cache(
         symbol, exchange, timeframe, from_ts, to_ts
     )
@@ -67,6 +65,10 @@ async def _save_bars_to_cache(
             await collection.insert_many([bar.dict() for bar in bars])
         except BulkWriteError:
             pass
+
+        min_ts = min(bars, key=lambda bar: bar.t).t
+        max_ts = max(bars, key=lambda bar: bar.t).t
+        await _save_chunk(symbol, exchange, timeframe, min_ts, max_ts)
 
 
 async def _get_bars_from_ib(
