@@ -20,7 +20,8 @@ async def get_historical_bars(
     )
     if not cached_bars:
         live_bars = await _get_bars_from_ib(symbol, exchange, timeframe, from_ts, to_ts)
-        await _save_bars_to_cache(symbol, exchange, timeframe, live_bars)
+        if live_bars:
+            await _save_bars_to_cache(symbol, exchange, timeframe, live_bars)
 
     return await _get_bars_from_cache(symbol, exchange, timeframe, from_ts, to_ts)
 
@@ -56,7 +57,12 @@ async def _get_bars_from_cache(
 
 
 async def _save_bars_to_cache(
-    symbol: str, exchange: Exchange, timeframe: Timeframe, bars: list[Bar]
+    symbol: str,
+    exchange: Exchange,
+    timeframe: Timeframe,
+    from_ts: int,
+    to_ts: int,
+    bars: list[Bar],
 ) -> None:
     if bars:
         collection, _ = _get_collections(symbol, exchange, timeframe)
@@ -66,9 +72,7 @@ async def _save_bars_to_cache(
         except BulkWriteError:
             pass
 
-        min_ts = min(bars, key=lambda bar: bar.t).t
-        max_ts = max(bars, key=lambda bar: bar.t).t
-        await _save_chunk(symbol, exchange, timeframe, min_ts, max_ts)
+        await _save_chunk(symbol, exchange, timeframe, from_ts, to_ts)
 
 
 async def _get_bars_from_ib(
