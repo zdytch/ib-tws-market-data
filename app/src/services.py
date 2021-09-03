@@ -13,11 +13,12 @@ async def get_historical_bars(
     exchange, symbol = tuple(ticker.split(':'))
     exchange = Exchange(exchange)
 
-    cached_bars = _get_bars_from_cache(symbol, exchange, timeframe, from_ts, to_ts)
-
+    cached_bars = await _get_bars_from_cache(
+        symbol, exchange, timeframe, from_ts, to_ts
+    )
     if not cached_bars:
         live_bars = await _get_bars_from_ib(symbol, exchange, timeframe, from_ts, to_ts)
-        await _save_bars_to_cache(live_bars)
+        await _save_bars_to_cache(symbol, exchange, timeframe, live_bars)
 
     return await _get_bars_from_cache(symbol, exchange, timeframe, from_ts, to_ts)
 
@@ -41,11 +42,25 @@ def get_chart_data_from_bars(bar_list: list[Bar]) -> ChartData:
 async def _get_bars_from_cache(
     symbol: str, exchange: Exchange, timeframe: Timeframe, from_ts: int, to_ts
 ) -> list[Bar]:
-    pass
+    bars = []
+    collection_name = f'bars_{symbol}_{exchange}_{timeframe}'
+    collection = database[collection_name]
+
+    cursor = collection.find({'t': {'$gte': from_ts, '$lte': to_ts}}).sort('t')
+    for mongo_bar in await cursor.to_list(999):
+        bar = Bar(**mongo_bar)
+        bars.append(bar)
+
+    return bars
 
 
-async def _save_bars_to_cache(bars: list[Bar]) -> None:
-    pass
+async def _save_bars_to_cache(
+    symbol: str, exchange: Exchange, timeframe: Timeframe, bars: list[Bar]
+) -> None:
+    collection_name = f'bars_{symbol}_{exchange}_{timeframe}'
+    collection = database[collection_name]
+
+    await collection.insert_many([bar.dict() for bar in bars])
 
 
 async def _get_bars_from_ib(
