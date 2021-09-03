@@ -2,6 +2,7 @@ from schemas import Timeframe, InstrumentType, Exchange, Bar, ChartData
 from ib_connector import IBConnector
 from datetime import datetime
 from config.db import database
+from pymongo.errors import BulkWriteError
 import pytz
 
 ibc = IBConnector()
@@ -43,8 +44,7 @@ async def _get_bars_from_cache(
     symbol: str, exchange: Exchange, timeframe: Timeframe, from_ts: int, to_ts
 ) -> list[Bar]:
     bars = []
-    collection_name = f'bars_{symbol}_{exchange}_{timeframe}'
-    collection = database[collection_name]
+    collection = _get_collection(symbol, exchange, timeframe)
 
     cursor = collection.find({'t': {'$gte': from_ts, '$lte': to_ts}}).sort('t')
     for mongo_bar in await cursor.to_list(999):
@@ -57,10 +57,13 @@ async def _get_bars_from_cache(
 async def _save_bars_to_cache(
     symbol: str, exchange: Exchange, timeframe: Timeframe, bars: list[Bar]
 ) -> None:
-    collection_name = f'bars_{symbol}_{exchange}_{timeframe}'
-    collection = database[collection_name]
+    if bars:
+        collection = _get_collection(symbol, exchange, timeframe)
 
-    await collection.insert_many([bar.dict() for bar in bars])
+        try:
+            await collection.insert_many([bar.dict() for bar in bars])
+        except BulkWriteError:
+            pass
 
 
 async def _get_bars_from_ib(
@@ -73,6 +76,14 @@ async def _get_bars_from_ib(
     return await ibc.get_historical_bars(
         symbol, exchange, instrument_type, timeframe, from_dt, to_dt
     )
+
+
+def _get_collection(symbol: str, exchange: Exchange, timeframe: Timeframe):
+    collection_name = f'bars_{symbol.lower()}_{exchange.lower()}_{timeframe.lower()}'
+    collection = database[collection_name]
+    collection.create_index('t', unique=True)
+
+    return collection
 
 
 def _get_instrument_type_by_exchange(exchange: Exchange) -> InstrumentType:
