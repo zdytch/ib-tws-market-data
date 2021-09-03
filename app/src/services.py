@@ -41,7 +41,7 @@ def get_chart_data_from_bars(bar_list: list[Bar]) -> ChartData:
 
 
 async def _get_bars_from_cache(
-    symbol: str, exchange: Exchange, timeframe: Timeframe, from_ts: int, to_ts
+    symbol: str, exchange: Exchange, timeframe: Timeframe, from_ts: int, to_ts: int
 ) -> list[Bar]:
     bars = []
     collection = _get_collection(symbol, exchange, timeframe)
@@ -67,7 +67,7 @@ async def _save_bars_to_cache(
 
 
 async def _get_bars_from_ib(
-    symbol: str, exchange: Exchange, timeframe: Timeframe, from_ts: int, to_ts
+    symbol: str, exchange: Exchange, timeframe: Timeframe, from_ts: int, to_ts: int
 ) -> list[Bar]:
     instrument_type = _get_instrument_type_by_exchange(Exchange(exchange))
     from_dt = datetime.fromtimestamp(from_ts, pytz.utc)
