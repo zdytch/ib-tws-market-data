@@ -1,6 +1,7 @@
 from schemas import Timeframe, InstrumentType, Exchange, Bar, ChartData
 from ib_connector import IBConnector
 from datetime import datetime
+from config.db import database
 import pytz
 
 ibc = IBConnector()
@@ -12,9 +13,13 @@ async def get_historical_bars(
     exchange, symbol = tuple(ticker.split(':'))
     exchange = Exchange(exchange)
 
-    return await _get_historical_bars_from_ib(
-        symbol, exchange, timeframe, from_ts, to_ts
-    )
+    cached_bars = _get_bars_from_cache(symbol, exchange, timeframe, from_ts, to_ts)
+
+    if not cached_bars:
+        live_bars = await _get_bars_from_ib(symbol, exchange, timeframe, from_ts, to_ts)
+        await _save_bars_to_cache(live_bars)
+
+    return await _get_bars_from_cache(symbol, exchange, timeframe, from_ts, to_ts)
 
 
 def get_chart_data_from_bars(bar_list: list[Bar]) -> ChartData:
@@ -33,7 +38,17 @@ def get_chart_data_from_bars(bar_list: list[Bar]) -> ChartData:
     return chart_data
 
 
-async def _get_historical_bars_from_ib(
+async def _get_bars_from_cache(
+    symbol: str, exchange: Exchange, timeframe: Timeframe, from_ts: int, to_ts
+) -> list[Bar]:
+    pass
+
+
+async def _save_bars_to_cache(bars: list[Bar]) -> None:
+    pass
+
+
+async def _get_bars_from_ib(
     symbol: str, exchange: Exchange, timeframe: Timeframe, from_ts: int, to_ts
 ) -> list[Bar]:
     instrument_type = _get_instrument_type_by_exchange(Exchange(exchange))
