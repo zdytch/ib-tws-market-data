@@ -2,6 +2,7 @@ from schemas import Timeframe, InstrumentType, Exchange, Bar, ChartData
 from ib_connector import IBConnector
 from datetime import datetime
 from config.db import database
+from motor.motor_asyncio import AsyncIOMotorCollection
 from pymongo.errors import BulkWriteError
 import pytz
 
@@ -13,6 +14,8 @@ async def get_historical_bars(
 ) -> list[Bar]:
     exchange, symbol = tuple(ticker.split(':'))
     exchange = Exchange(exchange)
+
+    await _save_chunk(symbol, exchange, timeframe, from_ts, to_ts)
 
     cached_bars = await _get_bars_from_cache(
         symbol, exchange, timeframe, from_ts, to_ts
@@ -44,7 +47,7 @@ async def _get_bars_from_cache(
     symbol: str, exchange: Exchange, timeframe: Timeframe, from_ts: int, to_ts: int
 ) -> list[Bar]:
     bars = []
-    collection = _get_collection(symbol, exchange, timeframe)
+    collection, _ = _get_collections(symbol, exchange, timeframe)
 
     cursor = collection.find({'t': {'$gte': from_ts, '$lte': to_ts}}).sort('t')
     for mongo_bar in await cursor.to_list(999):
@@ -58,7 +61,7 @@ async def _save_bars_to_cache(
     symbol: str, exchange: Exchange, timeframe: Timeframe, bars: list[Bar]
 ) -> None:
     if bars:
-        collection = _get_collection(symbol, exchange, timeframe)
+        collection, _ = _get_collections(symbol, exchange, timeframe)
 
         try:
             await collection.insert_many([bar.dict() for bar in bars])
@@ -78,12 +81,27 @@ async def _get_bars_from_ib(
     )
 
 
-def _get_collection(symbol: str, exchange: Exchange, timeframe: Timeframe):
-    collection_name = f'bars_{symbol.lower()}_{exchange.lower()}_{timeframe.lower()}'
-    collection = database[collection_name]
-    collection.create_index('t', unique=True)
+async def _save_chunk(
+    symbol: str, exchange: Exchange, timeframe: Timeframe, from_ts: int, to_ts: int
+) -> None:
+    _, collection = _get_collections(symbol, exchange, timeframe)
 
-    return collection
+    await collection.insert_one({'from_ts': from_ts, 'to_ts': to_ts})
+
+    # perform_chunk_defragmentation()
+
+
+def _get_collections(
+    symbol: str, exchange: Exchange, timeframe: Timeframe
+) -> tuple[AsyncIOMotorCollection, AsyncIOMotorCollection]:
+    bar_col_name = f'{symbol.lower()}_{exchange.lower()}_{timeframe.lower()}_bars'
+    chunk_col_name = f'{symbol.lower()}_{exchange.lower()}_{timeframe.lower()}_chunks'
+
+    bar_collection = database[bar_col_name]
+    bar_collection.create_index('t', unique=True)
+    chunk_collection = database[chunk_col_name]
+
+    return bar_collection, chunk_collection
 
 
 def _get_instrument_type_by_exchange(exchange: Exchange) -> InstrumentType:
