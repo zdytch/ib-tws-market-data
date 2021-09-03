@@ -1,6 +1,8 @@
 from schemas import Timeframe, InstrumentType, Exchange, Bar, ChartData
 from ib_connector import IBConnector
 from datetime import datetime
+from config.db import database
+from pymongo.errors import BulkWriteError
 import pytz
 
 ibc = IBConnector()
@@ -10,13 +12,16 @@ async def get_historical_bars(
     ticker: str, timeframe: Timeframe, from_ts: int, to_ts: int
 ) -> list[Bar]:
     exchange, symbol = tuple(ticker.split(':'))
-    instrument_type = _get_instrument_type_by_exchange(Exchange(exchange))
-    from_dt = datetime.fromtimestamp(from_ts, pytz.utc)
-    to_dt = datetime.fromtimestamp(to_ts, pytz.utc)
+    exchange = Exchange(exchange)
 
-    return await ibc.get_historical_bars(
-        symbol, exchange, instrument_type, timeframe, from_dt, to_dt
+    cached_bars = await _get_bars_from_cache(
+        symbol, exchange, timeframe, from_ts, to_ts
     )
+    if not cached_bars:
+        live_bars = await _get_bars_from_ib(symbol, exchange, timeframe, from_ts, to_ts)
+        await _save_bars_to_cache(symbol, exchange, timeframe, live_bars)
+
+    return await _get_bars_from_cache(symbol, exchange, timeframe, from_ts, to_ts)
 
 
 def get_chart_data_from_bars(bar_list: list[Bar]) -> ChartData:
@@ -33,6 +38,52 @@ def get_chart_data_from_bars(bar_list: list[Bar]) -> ChartData:
         chart_data.s = 'ok'
 
     return chart_data
+
+
+async def _get_bars_from_cache(
+    symbol: str, exchange: Exchange, timeframe: Timeframe, from_ts: int, to_ts: int
+) -> list[Bar]:
+    bars = []
+    collection = _get_collection(symbol, exchange, timeframe)
+
+    cursor = collection.find({'t': {'$gte': from_ts, '$lte': to_ts}}).sort('t')
+    for mongo_bar in await cursor.to_list(999):
+        bar = Bar(**mongo_bar)
+        bars.append(bar)
+
+    return bars
+
+
+async def _save_bars_to_cache(
+    symbol: str, exchange: Exchange, timeframe: Timeframe, bars: list[Bar]
+) -> None:
+    if bars:
+        collection = _get_collection(symbol, exchange, timeframe)
+
+        try:
+            await collection.insert_many([bar.dict() for bar in bars])
+        except BulkWriteError:
+            pass
+
+
+async def _get_bars_from_ib(
+    symbol: str, exchange: Exchange, timeframe: Timeframe, from_ts: int, to_ts: int
+) -> list[Bar]:
+    instrument_type = _get_instrument_type_by_exchange(Exchange(exchange))
+    from_dt = datetime.fromtimestamp(from_ts, pytz.utc)
+    to_dt = datetime.fromtimestamp(to_ts, pytz.utc)
+
+    return await ibc.get_historical_bars(
+        symbol, exchange, instrument_type, timeframe, from_dt, to_dt
+    )
+
+
+def _get_collection(symbol: str, exchange: Exchange, timeframe: Timeframe):
+    collection_name = f'bars_{symbol.lower()}_{exchange.lower()}_{timeframe.lower()}'
+    collection = database[collection_name]
+    collection.create_index('t', unique=True)
+
+    return collection
 
 
 def _get_instrument_type_by_exchange(exchange: Exchange) -> InstrumentType:

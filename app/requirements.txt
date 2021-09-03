@@ -1,5 +1,6 @@
 fastapi
 uvicorn
+motor
 ib_insync
 loguru
 pytz
