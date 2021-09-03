@@ -21,7 +21,9 @@ async def get_historical_bars(
     if not cached_bars:
         live_bars = await _get_bars_from_ib(symbol, exchange, timeframe, from_ts, to_ts)
         if live_bars:
-            await _save_bars_to_cache(symbol, exchange, timeframe, live_bars)
+            await _save_bars_to_cache(
+                symbol, exchange, timeframe, from_ts, to_ts, live_bars
+            )
 
     return await _get_bars_from_cache(symbol, exchange, timeframe, from_ts, to_ts)
 
