@@ -96,7 +96,39 @@ async def _save_chunk(
 
     await collection.insert_one({'from_ts': from_ts, 'to_ts': to_ts})
 
-    # perform_chunk_defragmentation()
+    await _perform_chunk_defragmentation(collection)
+
+
+async def _perform_chunk_defragmentation(collection: AsyncIOMotorCollection) -> None:
+    # TODO: Use mongo aggregation here
+    in_progress = True
+    while in_progress:
+        try:
+            cursor = collection.find()
+            chunks = await cursor.to_list(999)
+
+            for chunk in chunks:
+                for compare_chunk in chunks:
+                    if compare_chunk is not chunk and (
+                        chunk['from_ts'] <= compare_chunk['from_ts'] <= chunk['to_ts']
+                        or chunk['from_ts'] <= compare_chunk['to_ts'] <= chunk['to_ts']
+                    ):
+                        min_ts = min((compare_chunk['from_ts'], chunk['from_ts']))
+                        max_ts = max((compare_chunk['to_ts'], chunk['to_ts']))
+
+                        await collection.insert_one(
+                            {'from_ts': min_ts, 'to_ts': max_ts}
+                        )
+                        await collection.delete_many(
+                            {'_id': {'$in': [compare_chunk['_id'], chunk['_id']]}}
+                        )
+
+                        raise StopIteration
+
+            in_progress = False
+
+        except StopIteration:
+            pass
 
 
 def _get_collections(
