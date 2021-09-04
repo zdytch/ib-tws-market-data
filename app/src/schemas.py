@@ -35,6 +35,11 @@ class Bar(BaseModel):
     t: int
 
 
+class Range(BaseModel):
+    from_t: int
+    to_t: int
+
+
 class ChartData(BaseModel):
     o: list[float] = []
     h: list[float] = []
