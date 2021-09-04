@@ -66,7 +66,7 @@ async def _get_ranges_from_cache(
     symbol: str, exchange: Exchange, timeframe: Timeframe
 ) -> list[Range]:
     _, collection = _get_collections(symbol, exchange, timeframe)
-    return [Range(**dic) for dic in await collection.find().cursor.to_list(999)]
+    return [Range(**dic) for dic in await collection.find().to_list(999)]
 
 
 async def _save_bars_to_cache(
@@ -121,7 +121,7 @@ async def _save_range_to_cache(
 ) -> None:
     _, collection = _get_collections(symbol, exchange, timeframe)
 
-    await collection.insert_one(**range)
+    await collection.insert_one(range.dict())
 
     await _perform_cached_range_defragmentation(collection)
 
