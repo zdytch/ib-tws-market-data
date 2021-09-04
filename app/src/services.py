@@ -89,6 +89,25 @@ async def _get_bars_from_ib(
     )
 
 
+def _get_missing_ranges(existing_ranges: list, from_ts: int, to_ts: int) -> list:
+    missing_ranges = []
+    next_from_ts = from_ts
+
+    for range in existing_ranges:
+        if range['to_ts'] > from_ts and range['from_ts'] < to_ts:
+            if range['from_ts'] > next_from_ts < to_ts:
+                missing_ranges.append(
+                    {'from_ts': next_from_ts, 'to_ts': range['from_ts']}
+                )
+
+            next_from_ts = range['to_ts']
+
+    if next_from_ts < to_ts:
+        missing_ranges.append({'from_ts': next_from_ts, 'to_ts': to_ts})
+
+    return missing_ranges
+
+
 async def _save_chunk(
     symbol: str, exchange: Exchange, timeframe: Timeframe, from_ts: int, to_ts: int
 ) -> None:
