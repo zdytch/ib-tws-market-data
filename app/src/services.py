@@ -15,11 +15,17 @@ async def get_historical_bars(
     exchange, symbol = tuple(ticker.split(':'))
     exchange = Exchange(exchange)
 
-    cached_bars = await _get_bars_from_cache(symbol, exchange, timeframe, range)
-    if not cached_bars:
-        live_bars = await _get_bars_from_ib(symbol, exchange, timeframe, range)
-        if live_bars:
-            await _save_bars_to_cache(symbol, exchange, timeframe, range, live_bars)
+    cached_ranges = await _get_ranges_from_cache(symbol, exchange, timeframe)
+    missing_ranges = _get_missing_ranges(range, cached_ranges)
+
+    for missing_range in missing_ranges:
+        origin_bars = await _get_bars_from_ib(
+            symbol, exchange, timeframe, missing_range
+        )
+        if origin_bars:
+            await _save_bars_to_cache(
+                symbol, exchange, timeframe, missing_range, origin_bars
+            )
 
     return await _get_bars_from_cache(symbol, exchange, timeframe, range)
 
@@ -54,6 +60,13 @@ async def _get_bars_from_cache(
         bars.append(bar)
 
     return bars
+
+
+async def _get_ranges_from_cache(
+    symbol: str, exchange: Exchange, timeframe: Timeframe
+) -> list[Range]:
+    _, collection = _get_collections(symbol, exchange, timeframe)
+    return [Range(**dic) for dic in await collection.find().cursor.to_list(999)]
 
 
 async def _save_bars_to_cache(
