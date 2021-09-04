@@ -133,9 +133,7 @@ async def _perform_cached_range_defragmentation(
     in_progress = True
     while in_progress:
         try:
-            ranges = [
-                Range(**dic) for dic in await collection.find().cursor.to_list(999)
-            ]
+            ranges = [Range(**dic) for dic in await collection.find().to_list(999)]
 
             for range in ranges:
                 for compare_range in ranges:
