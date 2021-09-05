@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Query
-from schemas import Timeframe, Bar, ChartData
+from schemas import Timeframe, BarData, ChartData
 import services
 from typing import Union
 
@@ -7,7 +7,7 @@ from typing import Union
 api_router = APIRouter()
 
 
-@api_router.get('/historical_data', response_model=Union[list[Bar], ChartData])
+@api_router.get('/historical_data', response_model=Union[BarData, ChartData])
 async def get_historical_data(
     ticker: str,
     timeframe: Timeframe,
@@ -15,9 +15,9 @@ async def get_historical_data(
     to: int = ...,
     chart_format: bool = False,
 ):
-    bars = await services.get_historical_bars(ticker, timeframe, from_, to)
+    bar_data = await services.get_bar_data(ticker, timeframe, from_, to)
 
     if chart_format:
-        return services.get_chart_data_from_bars(bars)
+        return await services.bar_data_to_chart_data(bar_data)
     else:
-        return bars
+        return bar_data

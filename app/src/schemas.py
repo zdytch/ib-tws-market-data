@@ -1,6 +1,7 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from enum import Enum
 from datetime import datetime
+from typing import Optional
 
 
 class Exchange(str, Enum):
@@ -66,6 +67,11 @@ class Range(BaseModel):
         )
 
 
+class BarData(BaseModel):
+    instrument: Instrument
+    bars: list[Bar]
+
+
 class ChartData(BaseModel):
     o: list[float] = []
     h: list[float] = []
@@ -74,3 +80,7 @@ class ChartData(BaseModel):
     v: list[int] = []
     t: list[int] = []
     s: str = 'no_data'
+    next_time: Optional[int] = Field(alias='nextTime')
+
+    class Config:
+        allow_population_by_field_name = True
