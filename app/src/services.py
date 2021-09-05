@@ -61,8 +61,8 @@ async def bar_data_to_chart_data(data: BarData) -> ChartData:
     if data.bars:
         chart_data.s = 'ok'
     else:
-        last_bar = await cache.get_last_bar(data.instrument)
-        chart_data.next_time = last_bar.t
+        last_ts = await cache.get_last_timestamp(data.instrument)
+        chart_data.next_time = last_ts
 
     return chart_data
 

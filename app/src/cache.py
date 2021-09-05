@@ -19,13 +19,17 @@ async def get_bars(instrument: Instrument, range: Range) -> list[Bar]:
     return bars
 
 
-async def get_last_bar(instrument: Instrument) -> Bar:
-    # TODO: Finf better approach
+async def get_last_timestamp(instrument: Instrument) -> int:
+    # TODO: Find better approach
+    ts = 0
     collection, _ = _get_collections(instrument)
     bar_as_list = await collection.find().sort('t', -1).limit(1).to_list(1)
-    mongo_bar = bar_as_list[0]
 
-    return Bar(**mongo_bar)
+    if bar_as_list:
+        mongo_bar = bar_as_list[0]
+        ts = mongo_bar['t']
+
+    return ts
 
 
 async def save_bars(instrument: Instrument, range: Range, bars: list[Bar]) -> None:
