@@ -76,11 +76,9 @@ async def _perform_range_defragmentation(
 
 
 def _get_collections(instrument: Instrument) -> tuple[Collection, Collection]:
-    name_base = (
-        f'{instrument.symbol}_{instrument.exchange}_{instrument.timeframe}'.lower()
-    )
-    bar_col_name = f'{name_base}_bars'
-    range_col_name = f'{name_base}_ranges'
+    name = f'{instrument.symbol}_{instrument.exchange}_{instrument.timeframe}'.lower()
+    bar_col_name = f'{name}_bars'
+    range_col_name = f'{name}_ranges'
 
     bar_collection = database[bar_col_name]
     bar_collection.create_index('t', unique=True)
