@@ -144,6 +144,7 @@ async def _perform_cached_range_defragmentation(
                         min_t = min((compare_range.from_t, range.from_t))
                         max_t = max((compare_range.to_t, range.to_t))
 
+                        # TODO: Delete by id
                         await collection.delete_many(
                             {'from_t': {'$in': [compare_range.from_t, range.from_t]}}
                         )
