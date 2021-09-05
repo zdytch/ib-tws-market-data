@@ -2,6 +2,14 @@ from pydantic import BaseModel
 from enum import Enum
 
 
+class Exchange(str, Enum):
+    NYSE = 'NYSE'
+    NASDAQ = 'NASDAQ'
+    GLOBEX = 'GLOBEX'
+    NYMEX = 'NYMEX'
+    ECBOT = 'ECBOT'
+
+
 class Timeframe(str, Enum):
     M1 = '1'
     M5 = '5'
@@ -18,12 +26,11 @@ class InstrumentType(str, Enum):
     FUTURE = 'FUT'
 
 
-class Exchange(str, Enum):
-    NYSE = 'NYSE'
-    NASDAQ = 'NASDAQ'
-    GLOBEX = 'GLOBEX'
-    NYMEX = 'NYMEX'
-    ECBOT = 'ECBOT'
+class Instrument(BaseModel):
+    symbol: str
+    exchange: Exchange
+    timeframe: Timeframe
+    type: InstrumentType
 
 
 class Bar(BaseModel):
