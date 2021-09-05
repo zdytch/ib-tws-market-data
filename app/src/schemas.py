@@ -33,6 +33,12 @@ class Instrument(BaseModel):
     timeframe: Timeframe
     type: InstrumentType
 
+    def __str__(self):
+        return (
+            f'symbol={self.symbol} exchange={self.exchange} '
+            f'timeframe={self.timeframe} type={self.type}'
+        )
+
 
 class Bar(BaseModel):
     o: float
