@@ -29,6 +29,8 @@ async def save_bars(instrument: Instrument, range: Range, bars: list[Bar]) -> No
 
         await save_range(instrument, range)
 
+        logger.debug(f'Bars saved to cache. Instrument: {instrument}. Range: {range}')
+
 
 async def get_ranges(instrument: Instrument) -> list[Range]:
     _, collection = _get_collections(instrument)

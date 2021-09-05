@@ -31,7 +31,9 @@ async def get_historical_bars(
     missing_ranges = _calculate_missing_ranges(range, cache_ranges)
 
     for missing_range in missing_ranges:
-        logger.debug(f'Missing bars in cache. Range: {missing_range}')
+        logger.debug(
+            f'Missing bars in cache. Retreiving from origin... Instrument: {instrument}. Range: {missing_range}'
+        )
 
         origin_bars = await _get_bars_from_origin(instrument, missing_range)
         if origin_bars:
@@ -56,11 +58,20 @@ def get_chart_data_from_bars(bars: list[Bar]) -> ChartData:
     return chart_data
 
 
-async def _get_bars_from_ib(instrument: Instrument, range: Range) -> list[Bar]:
+async def _get_bars_from_origin(instrument: Instrument, range: Range) -> list[Bar]:
     from_dt = datetime.fromtimestamp(range.from_t, pytz.utc)
     to_dt = datetime.fromtimestamp(range.to_t, pytz.utc)
 
-    return await ibc.get_historical_bars(instrument, from_dt, to_dt)
+    bars = await ibc.get_historical_bars(instrument, from_dt, to_dt)
+
+    if bars:
+        logger.debug(
+            f'Received bars from origin. Instrument: {instrument}. Range: {range}'
+        )
+    else:
+        logger.debug(f'No bars from origin. Instrument: {instrument}. Range: {range}')
+
+    return bars
 
 
 def _calculate_missing_ranges(
