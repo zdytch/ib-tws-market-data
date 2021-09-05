@@ -21,7 +21,6 @@ async def get_bars(instrument: Instrument, range: Range) -> list[Bar]:
 async def save_bars(instrument: Instrument, range: Range, bars: list[Bar]) -> None:
     if bars:
         collection, _ = _get_collections(instrument)
-
         try:
             await collection.insert_many([bar.dict() for bar in bars])
         except BulkWriteError:
