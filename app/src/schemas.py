@@ -42,6 +42,12 @@ class Bar(BaseModel):
     v: int
     t: int
 
+    def __str__(self):
+        return (
+            f'o={self.o} h={self.h} l={self.l} c={self.c} v={self.v} '
+            f't={self.t}({datetime.fromtimestamp(self.t)})'
+        )
+
 
 class Range(BaseModel):
     from_t: int
@@ -49,7 +55,7 @@ class Range(BaseModel):
 
     def __str__(self):
         return (
-            f'from_t={self.from_t}({datetime.fromtimestamp(self.from_t)})'
+            f'from_t={self.from_t}({datetime.fromtimestamp(self.from_t)}) '
             f'to_t={self.to_t}({datetime.fromtimestamp(self.to_t)})'
         )
 
