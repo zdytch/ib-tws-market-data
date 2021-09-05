@@ -5,16 +5,6 @@ import ib_utils
 from loguru import logger
 
 
-logger.add(
-    'logs/ib_sync_{time}.log',
-    format='{time} {level} {message}',
-    level='DEBUG',
-    rotation='100 MB',
-    retention='14 days',
-    compression='zip',
-)
-
-
 class IBConnector:
     def __init__(self):
         self._ib = IB()

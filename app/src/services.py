@@ -11,6 +11,7 @@ from ib_connector import IBConnector
 from datetime import datetime
 import pytz
 import cache
+from loguru import logger
 
 ibc = IBConnector()
 

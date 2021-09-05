@@ -2,6 +2,7 @@ from schemas import Instrument, Bar, Range
 from config.db import database
 from motor.motor_asyncio import AsyncIOMotorCollection as Collection
 from pymongo.errors import BulkWriteError
+from loguru import logger
 
 
 async def get_bars(instrument: Instrument, range: Range) -> list[Bar]:
