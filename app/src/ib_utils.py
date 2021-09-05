@@ -28,6 +28,8 @@ def duration_to_ib(from_dt: datetime, to_dt: datetime) -> str:
     year_count = math.floor(day_count / 365)  # Days in year
 
     if not day_count:
+        # TWS requires duration to be at least 30 seconds
+        second_count = second_count if second_count >= 30 else 30
         duration = f'{second_count} S'
     elif not year_count:
         duration = f'{day_count} D'

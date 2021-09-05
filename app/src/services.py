@@ -31,7 +31,9 @@ async def get_historical_bars(
     missing_ranges = _calculate_missing_ranges(range, cache_ranges)
 
     for missing_range in missing_ranges:
-        origin_bars = await _get_bars_from_ib(instrument, missing_range)
+        logger.debug(f'Missing bars in cache. Range: {missing_range}')
+
+        origin_bars = await _get_bars_from_origin(instrument, missing_range)
         if origin_bars:
             await cache.save_bars(instrument, missing_range, origin_bars)
 
