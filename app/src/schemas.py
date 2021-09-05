@@ -1,5 +1,7 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from enum import Enum
+from datetime import datetime
+from typing import Optional
 
 
 class Exchange(str, Enum):
@@ -32,6 +34,12 @@ class Instrument(BaseModel):
     timeframe: Timeframe
     type: InstrumentType
 
+    def __str__(self):
+        return (
+            f'symbol={self.symbol} exchange={self.exchange} '
+            f'timeframe={self.timeframe} type={self.type}'
+        )
+
 
 class Bar(BaseModel):
     o: float
@@ -41,10 +49,27 @@ class Bar(BaseModel):
     v: int
     t: int
 
+    def __str__(self):
+        return (
+            f'o={self.o} h={self.h} l={self.l} c={self.c} v={self.v} '
+            f't={self.t}({datetime.fromtimestamp(self.t)})'
+        )
+
 
 class Range(BaseModel):
     from_t: int
     to_t: int
+
+    def __str__(self):
+        return (
+            f'from_t={self.from_t}({datetime.fromtimestamp(self.from_t)}) '
+            f'to_t={self.to_t}({datetime.fromtimestamp(self.to_t)})'
+        )
+
+
+class BarData(BaseModel):
+    instrument: Instrument
+    bars: list[Bar]
 
 
 class ChartData(BaseModel):
@@ -55,3 +80,7 @@ class ChartData(BaseModel):
     v: list[int] = []
     t: list[int] = []
     s: str = 'no_data'
+    next_time: Optional[int] = Field(alias='nextTime')
+
+    class Config:
+        allow_population_by_field_name = True

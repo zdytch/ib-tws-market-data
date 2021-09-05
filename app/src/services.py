@@ -6,18 +6,20 @@ from schemas import (
     ChartData,
     Range,
     Instrument,
+    BarData,
 )
 from ib_connector import IBConnector
 from datetime import datetime
 import pytz
 import cache
+from loguru import logger
 
 ibc = IBConnector()
 
 
-async def get_historical_bars(
+async def get_bar_data(
     ticker: str, timeframe: Timeframe, from_t: int, to_t: int
-) -> list[Bar]:
+) -> BarData:
     exchange, symbol = tuple(ticker.split(':'))
     exchange = Exchange(exchange)
     type = _get_instrument_type_by_exchange(exchange)
@@ -30,34 +32,55 @@ async def get_historical_bars(
     missing_ranges = _calculate_missing_ranges(range, cache_ranges)
 
     for missing_range in missing_ranges:
-        origin_bars = await _get_bars_from_ib(instrument, missing_range)
-        if origin_bars:
+        logger.debug(
+            f'Missing bars in cache. Retreiving from origin... Instrument: {instrument}. Range: {missing_range}'
+        )
+
+        try:
+            origin_bars = await _get_bars_from_origin(instrument, missing_range)
             await cache.save_bars(instrument, missing_range, origin_bars)
+        except Exception as e:
+            logger.debug(e)
 
-    return await cache.get_bars(instrument, range)
+    bars = await cache.get_bars(instrument, range)
+
+    return BarData(instrument=instrument, bars=bars)
 
 
-def get_chart_data_from_bars(bars: list[Bar]) -> ChartData:
+async def bar_data_to_chart_data(data: BarData) -> ChartData:
     chart_data = ChartData()
 
-    for bar in bars:
+    for bar in data.bars:
         chart_data.o.append(bar.o)
         chart_data.h.append(bar.h)
         chart_data.l.append(bar.l)
         chart_data.c.append(bar.c)
         chart_data.v.append(bar.v)
         chart_data.t.append(bar.t)
-    if all(value for value in chart_data.dict().values()):
+
+    if data.bars:
         chart_data.s = 'ok'
+    else:
+        last_ts = await cache.get_last_timestamp(data.instrument)
+        chart_data.next_time = last_ts
 
     return chart_data
 
 
-async def _get_bars_from_ib(instrument: Instrument, range: Range) -> list[Bar]:
+async def _get_bars_from_origin(instrument: Instrument, range: Range) -> list[Bar]:
     from_dt = datetime.fromtimestamp(range.from_t, pytz.utc)
     to_dt = datetime.fromtimestamp(range.to_t, pytz.utc)
 
-    return await ibc.get_historical_bars(instrument, from_dt, to_dt)
+    bars = await ibc.get_historical_bars(instrument, from_dt, to_dt)
+
+    if bars:
+        logger.debug(
+            f'Received bars from origin. Instrument: {instrument}. Range: {range}'
+        )
+    else:
+        logger.debug(f'No bars from origin. Instrument: {instrument}. Range: {range}')
+
+    return bars
 
 
 def _calculate_missing_ranges(

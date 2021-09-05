@@ -2,6 +2,7 @@ from schemas import Instrument, Bar, Range
 from config.db import database
 from motor.motor_asyncio import AsyncIOMotorCollection as Collection
 from pymongo.errors import BulkWriteError
+from loguru import logger
 
 
 async def get_bars(instrument: Instrument, range: Range) -> list[Bar]:
@@ -18,6 +19,19 @@ async def get_bars(instrument: Instrument, range: Range) -> list[Bar]:
     return bars
 
 
+async def get_last_timestamp(instrument: Instrument) -> int:
+    # TODO: Find better approach
+    ts = 0
+    collection, _ = _get_collections(instrument)
+    bar_as_list = await collection.find().sort('t', -1).limit(1).to_list(1)
+
+    if bar_as_list:
+        mongo_bar = bar_as_list[0]
+        ts = mongo_bar['t']
+
+    return ts
+
+
 async def save_bars(instrument: Instrument, range: Range, bars: list[Bar]) -> None:
     if bars:
         collection, _ = _get_collections(instrument)
@@ -26,7 +40,11 @@ async def save_bars(instrument: Instrument, range: Range, bars: list[Bar]) -> No
         except BulkWriteError:
             pass
 
-        await save_range(instrument, range)
+        min_ts = min(bars, key=lambda bar: bar.t).t
+        max_ts = max(bars, key=lambda bar: bar.t).t
+        await save_range(instrument, Range(from_t=min_ts, to_t=max_ts))
+
+        logger.debug(f'Bars saved to cache. Instrument: {instrument}. Range: {range}')
 
 
 async def get_ranges(instrument: Instrument) -> list[Range]:

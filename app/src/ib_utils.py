@@ -23,14 +23,18 @@ def timeframe_to_ib(timeframe: Timeframe) -> str:
 
 def duration_to_ib(from_dt: datetime, to_dt: datetime) -> str:
     period = to_dt - from_dt
-    day_count = math.ceil(period.total_seconds() / 86400)  # Seconds in day
-    year_count = math.ceil(day_count / 365)  # Days in year
+    second_count = int(period.total_seconds())
+    day_count = math.floor(second_count / 86400)  # Seconds in day
+    year_count = math.floor(day_count / 365)  # Days in year
 
-    # If duration is greater than 365 days, IB TWS requires year instead of day
-    if day_count > 365:
-        duration = f'{year_count} Y'
-    else:
+    if not day_count:
+        # TWS requires duration to be at least 30 seconds
+        second_count = second_count if second_count >= 30 else 30
+        duration = f'{second_count} S'
+    elif not year_count:
         duration = f'{day_count} D'
+    else:
+        duration = f'{year_count} Y'
 
     return duration
 
