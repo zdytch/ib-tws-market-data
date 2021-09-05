@@ -37,10 +37,10 @@ async def get_historical_bars(
     return await cache.get_bars(instrument, range)
 
 
-def get_chart_data_from_bars(bar_list: list[Bar]) -> ChartData:
+def get_chart_data_from_bars(bars: list[Bar]) -> ChartData:
     chart_data = ChartData()
 
-    for bar in bar_list:
+    for bar in bars:
         chart_data.o.append(bar.o)
         chart_data.h.append(bar.h)
         chart_data.l.append(bar.l)
