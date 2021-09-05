@@ -23,7 +23,7 @@ def timeframe_to_ib(timeframe: Timeframe) -> str:
 
 def duration_to_ib(from_dt: datetime, to_dt: datetime) -> str:
     period = to_dt - from_dt
-    second_count = period.total_seconds()
+    second_count = int(period.total_seconds())
     day_count = math.floor(second_count / 86400)  # Seconds in day
     year_count = math.floor(day_count / 365)  # Days in year
 
