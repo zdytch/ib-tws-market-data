@@ -36,9 +36,11 @@ async def get_bar_data(
             f'Missing bars in cache. Retreiving from origin... Instrument: {instrument}. Range: {missing_range}'
         )
 
-        origin_bars = await _get_bars_from_origin(instrument, missing_range)
-        if origin_bars:
+        try:
+            origin_bars = await _get_bars_from_origin(instrument, missing_range)
             await cache.save_bars(instrument, missing_range, origin_bars)
+        except Exception as e:
+            logger.debug(e)
 
     bars = await cache.get_bars(instrument, range)
 
