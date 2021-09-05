@@ -1,8 +1,16 @@
-from schemas import Timeframe, InstrumentType, Exchange, Bar, ChartData, Range
+from schemas import (
+    Timeframe,
+    InstrumentType,
+    Exchange,
+    Bar,
+    ChartData,
+    Range,
+    Instrument,
+)
 from ib_connector import IBConnector
 from datetime import datetime
 from config.db import database
-from motor.motor_asyncio import AsyncIOMotorCollection
+from motor.motor_asyncio import AsyncIOMotorCollection as Collection
 from pymongo.errors import BulkWriteError
 import pytz
 
@@ -10,24 +18,25 @@ ibc = IBConnector()
 
 
 async def get_historical_bars(
-    ticker: str, timeframe: Timeframe, range: Range
+    ticker: str, timeframe: Timeframe, from_t: int, to_t: int
 ) -> list[Bar]:
     exchange, symbol = tuple(ticker.split(':'))
     exchange = Exchange(exchange)
+    type = _get_instrument_type_by_exchange(exchange)
+    instrument = Instrument(
+        symbol=symbol, exchange=exchange, timeframe=timeframe, type=type
+    )
+    range = Range(from_t=from_t, to_t=to_t)
 
-    cached_ranges = await _get_ranges_from_cache(symbol, exchange, timeframe)
-    missing_ranges = _get_missing_ranges(range, cached_ranges)
+    cache_ranges = await _get_ranges_from_cache(instrument)
+    missing_ranges = _get_missing_ranges(range, cache_ranges)
 
     for missing_range in missing_ranges:
-        origin_bars = await _get_bars_from_ib(
-            symbol, exchange, timeframe, missing_range
-        )
+        origin_bars = await _get_bars_from_ib(instrument, missing_range)
         if origin_bars:
-            await _save_bars_to_cache(
-                symbol, exchange, timeframe, missing_range, origin_bars
-            )
+            await _save_bars_to_cache(instrument, missing_range, origin_bars)
 
-    return await _get_bars_from_cache(symbol, exchange, timeframe, range)
+    return await _get_bars_from_cache(instrument, range)
 
 
 def get_chart_data_from_bars(bar_list: list[Bar]) -> ChartData:
@@ -46,11 +55,9 @@ def get_chart_data_from_bars(bar_list: list[Bar]) -> ChartData:
     return chart_data
 
 
-async def _get_bars_from_cache(
-    symbol: str, exchange: Exchange, timeframe: Timeframe, range: Range
-) -> list[Bar]:
+async def _get_bars_from_cache(instrument: Instrument, range: Range) -> list[Bar]:
     bars = []
-    collection, _ = _get_collections(symbol, exchange, timeframe)
+    collection, _ = _get_collections(instrument)
 
     cursor = collection.find({'t': {'$gte': range.from_t, '$lte': range.to_t}}).sort(
         't'
@@ -62,41 +69,30 @@ async def _get_bars_from_cache(
     return bars
 
 
-async def _get_ranges_from_cache(
-    symbol: str, exchange: Exchange, timeframe: Timeframe
-) -> list[Range]:
-    _, collection = _get_collections(symbol, exchange, timeframe)
+async def _get_ranges_from_cache(instrument: Instrument) -> list[Range]:
+    _, collection = _get_collections(instrument)
     return [Range(**dic) for dic in await collection.find().to_list(999)]
 
 
 async def _save_bars_to_cache(
-    symbol: str,
-    exchange: Exchange,
-    timeframe: Timeframe,
-    range: Range,
-    bars: list[Bar],
+    instrument: Instrument, range: Range, bars: list[Bar]
 ) -> None:
     if bars:
-        collection, _ = _get_collections(symbol, exchange, timeframe)
+        collection, _ = _get_collections(instrument)
 
         try:
             await collection.insert_many([bar.dict() for bar in bars])
         except BulkWriteError:
             pass
 
-        await _save_range_to_cache(symbol, exchange, timeframe, range)
+        await _save_range_to_cache(instrument, range)
 
 
-async def _get_bars_from_ib(
-    symbol: str, exchange: Exchange, timeframe: Timeframe, range: Range
-) -> list[Bar]:
-    instrument_type = _get_instrument_type_by_exchange(Exchange(exchange))
+async def _get_bars_from_ib(instrument: Instrument, range: Range) -> list[Bar]:
     from_dt = datetime.fromtimestamp(range.from_t, pytz.utc)
     to_dt = datetime.fromtimestamp(range.to_t, pytz.utc)
 
-    return await ibc.get_historical_bars(
-        symbol, exchange, instrument_type, timeframe, from_dt, to_dt
-    )
+    return await ibc.get_historical_bars(instrument, from_dt, to_dt)
 
 
 def _get_missing_ranges(within_range: Range, existing_ranges: list[Range]) -> list:
@@ -116,10 +112,8 @@ def _get_missing_ranges(within_range: Range, existing_ranges: list[Range]) -> li
     return missing_ranges
 
 
-async def _save_range_to_cache(
-    symbol: str, exchange: Exchange, timeframe: Timeframe, range: Range
-) -> None:
-    _, collection = _get_collections(symbol, exchange, timeframe)
+async def _save_range_to_cache(instrument: Instrument, range: Range) -> None:
+    _, collection = _get_collections(instrument)
 
     await collection.insert_one(range.dict())
 
@@ -127,7 +121,7 @@ async def _save_range_to_cache(
 
 
 async def _perform_cached_range_defragmentation(
-    collection: AsyncIOMotorCollection,
+    collection: Collection,
 ) -> None:
     # TODO: Use mongo aggregation here
     in_progress = True
@@ -158,11 +152,12 @@ async def _perform_cached_range_defragmentation(
             pass
 
 
-def _get_collections(
-    symbol: str, exchange: Exchange, timeframe: Timeframe
-) -> tuple[AsyncIOMotorCollection, AsyncIOMotorCollection]:
-    bar_col_name = f'{symbol.lower()}_{exchange.lower()}_{timeframe.lower()}_bars'
-    range_col_name = f'{symbol.lower()}_{exchange.lower()}_{timeframe.lower()}_ranges'
+def _get_collections(instrument: Instrument) -> tuple[Collection, Collection]:
+    name_base = (
+        f'{instrument.symbol}_{instrument.exchange}_{instrument.timeframe}'.lower()
+    )
+    bar_col_name = f'{name_base}_bars'
+    range_col_name = f'{name_base}_ranges'
 
     bar_collection = database[bar_col_name]
     bar_collection.create_index('t', unique=True)
