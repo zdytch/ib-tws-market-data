@@ -40,7 +40,9 @@ async def save_bars(instrument: Instrument, range: Range, bars: list[Bar]) -> No
         except BulkWriteError:
             pass
 
-        await save_range(instrument, range)
+        min_ts = min(bars, key=lambda bar: bar.t).t
+        max_ts = max(bars, key=lambda bar: bar.t).t
+        await save_range(instrument, Range(from_t=min_ts, to_t=max_ts))
 
         logger.debug(f'Bars saved to cache. Instrument: {instrument}. Range: {range}')
 
