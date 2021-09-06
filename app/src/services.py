@@ -6,10 +6,12 @@ from schemas import (
     Range,
     Instrument,
     BarList,
+    InstrumentType,
 )
 from ib_connector import IBConnector
 from datetime import datetime
 from time import time
+from decimal import Decimal
 import pytz
 import cache
 from loguru import logger
@@ -87,6 +89,42 @@ async def bar_list_to_chart_data(data: BarList) -> ChartData:
     return chart_data
 
 
+async def get_info(ticker: str) -> dict:
+    instrument = await get_instrument(ticker)
+    instrument_type = _instrument_type_to_chart(instrument.type)
+    session, timezone = _exchange_schedule_to_chart(instrument.exchange)
+    price_scale = 10 ** abs(
+        Decimal(instrument.tick_size).normalize().as_tuple().exponent
+    )
+    min_movement = int(instrument.tick_size * price_scale)
+
+    return {
+        'name': ticker,
+        'ticker': ticker,
+        'type': instrument_type,
+        'description': instrument.description,
+        'exchange': instrument.exchange,
+        'listed_exchange': instrument.exchange,
+        'session': session,
+        'timezone': timezone,
+        'currency_code': 'USD',
+        'has_daily': True,
+        'has_intraday': True,
+        'minmov': min_movement,
+        'pricescale': price_scale,
+    }
+
+
+def get_config() -> dict:
+    return {
+        'supported_resolutions': ['1', '5', '30', '1D'],
+        'supports_search': True,
+        'supports_group_request': False,
+        'supports_marks': False,
+        'supports_timescale_marks': False,
+    }
+
+
 async def _get_instrument_from_origin(symbol: str, exchange: Exchange) -> Instrument:
     instrument = await ibc.get_instrument(symbol, exchange)
 
@@ -152,3 +190,33 @@ def _is_session_open(instrument: Instrument) -> bool:
 
 def _is_session_up_to_date(instrument: Instrument) -> bool:
     return instrument.nearest_session.close_t > int(time())
+
+
+def _instrument_type_to_chart(type: InstrumentType) -> str:
+    if type == InstrumentType.STOCK:
+        instrument_type = 'stock'
+    elif type == InstrumentType.FUTURE:
+        instrument_type = 'futures'
+    else:
+        raise ValueError(f'Cannot convert {type} to InstrumentType')
+
+    return instrument_type
+
+
+def _exchange_schedule_to_chart(exchange: Exchange) -> tuple[str, str]:
+    if exchange in (Exchange.NASDAQ, Exchange.NYSE):
+        tz_id = 'America/New_York'
+        session = '0930-1600'
+    elif exchange == Exchange.NYMEX:
+        tz_id = 'America/New_York'
+        session = '1800-1700'
+    elif exchange == Exchange.GLOBEX:
+        tz_id = 'America/Chicago'
+        session = '1700-1600'
+    elif exchange == Exchange.ECBOT:
+        tz_id = 'America/Chicago'
+        session = '1900-1320'
+    else:
+        raise ValueError(f'Cannot get schedule for exchange {exchange}')
+
+    return tz_id, session
