@@ -32,9 +32,15 @@ class Instrument(BaseModel):
     symbol: str
     exchange: Exchange
     type: InstrumentType
+    description: str
+    tick_size: float
+    multiplier: float
 
     def __str__(self):
-        return f'symbol={self.symbol} exchange={self.exchange} type={self.type}'
+        return (
+            f'symbol={self.symbol} exchange={self.exchange} type={self.type} '
+            f'description={self.description} tick_size={self.tick_size} multiplier={self.multiplier}'
+        )
 
 
 class Bar(BaseModel):
