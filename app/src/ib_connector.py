@@ -1,5 +1,5 @@
 from ib_insync import IB, Contract, Stock, ContFuture
-from schemas import Timeframe, InstrumentType, Bar, Instrument
+from schemas import Timeframe, InstrumentType, Bar, Instrument, Exchange
 from datetime import datetime
 import ib_utils
 from loguru import logger
@@ -13,6 +13,26 @@ class IBConnector:
     @property
     def is_connected(self) -> bool:
         return self._ib.isConnected()
+
+    async def get_instrument(self, symbol: str, exchange: Exchange) -> Instrument:
+        await self._connect()
+
+        contract = await self._get_contract(symbol, exchange)
+        type = contract.secType
+        is_stock = type == InstrumentType.STOCK
+        details = await self._ib.reqContractDetailsAsync(contract)
+        description = details[0].longName
+        tick_size = 0.01 if is_stock else details[0].minTick
+        multiplier = 1.0 if is_stock else contract.multiplier
+
+        return Instrument(
+            symbol=symbol,
+            exchange=exchange,
+            type=type,
+            description=description,
+            tick_size=tick_size,
+            multiplier=multiplier,
+        )
 
     async def get_historical_bars(
         self,
