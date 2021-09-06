@@ -51,7 +51,7 @@ async def get_bar_list(
             origin_bars = await _get_bars_from_origin(
                 instrument, timeframe, missing_range
             )
-            await cache.save_bars(instrument, timeframe, missing_range, origin_bars)
+            await cache.save_bars(instrument, timeframe, origin_bars)
         except Exception as e:
             logger.debug(e)
 
