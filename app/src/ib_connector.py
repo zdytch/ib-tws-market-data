@@ -24,6 +24,10 @@ class IBConnector:
         description = details[0].longName
         tick_size = 0.01 if is_stock else details[0].minTick
         multiplier = 1.0 if is_stock else contract.multiplier
+        trading_hours = details[0].liquidHours if is_stock else details[0].tradingHours
+        nearest_session = ib_utils.get_nearest_trading_session(
+            trading_hours, details[0].timeZoneId
+        )
 
         return Instrument(
             symbol=symbol,
@@ -32,6 +36,7 @@ class IBConnector:
             description=description,
             tick_size=tick_size,
             multiplier=multiplier,
+            nearest_session=nearest_session,
         )
 
     async def get_historical_bars(

@@ -1,6 +1,6 @@
 from typing import Union
 from ib_insync import BarData
-from schemas import Bar, Timeframe, Exchange, InstrumentType
+from schemas import Bar, Timeframe, Exchange, InstrumentType, TradingSession
 from datetime import datetime, date, time
 import math
 import pytz
@@ -70,3 +70,24 @@ def get_instrument_type_by_exchange(exchange: Exchange) -> InstrumentType:
         raise ValueError(f'Cannot get instrument type, exchange unknown: {exchange}')
 
     return instrument_type
+
+
+def get_nearest_trading_session(trading_hours: str, tz_id: str) -> TradingSession:
+    session = None
+    session_tz = pytz.timezone(tz_id)
+    for ib_session in trading_hours.split(';'):
+        if not 'CLOSED' in ib_session:
+            ib_open, ib_close = tuple(ib_session.split('-'))
+            open = session_tz.localize(datetime.strptime(ib_open, '%Y%m%d:%H%M'))
+            close = session_tz.localize(datetime.strptime(ib_close, '%Y%m%d:%H%M'))
+            session = TradingSession(
+                open_t=int(open.timestamp()), close_t=int(close.timestamp())
+            )
+            break
+
+    if not session:
+        raise ValueError(
+            f'Cannot get nearest trading session from trading hours {trading_hours}'
+        )
+
+    return session
