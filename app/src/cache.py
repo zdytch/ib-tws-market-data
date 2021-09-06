@@ -1,8 +1,22 @@
-from schemas import Timeframe, Instrument, Bar, Range
+from schemas import Timeframe, Instrument, Bar, Range, Exchange
 from config.db import database
 from motor.motor_asyncio import AsyncIOMotorCollection as Collection
 from pymongo.errors import BulkWriteError
 from loguru import logger
+
+
+async def get_instrument(symbol: str, exchange: Exchange) -> Instrument:
+    collection = database.instruments
+    instrument_dict = collection.find_one({'symbol': symbol, 'exchange': exchange})
+
+    return Instrument(**instrument_dict)
+
+
+async def save_instrument(instrument: Instrument) -> None:
+    collection = database.instruments
+    collection.create_index('symbol', 'exchange', unique=True)
+
+    await collection.insert_one(instrument.dict())
 
 
 async def get_bars(

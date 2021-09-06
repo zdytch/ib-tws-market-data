@@ -17,15 +17,27 @@ from loguru import logger
 ibc = IBConnector()
 
 
+async def get_instrument(ticker: str) -> Instrument:
+    exchange, symbol = tuple(ticker.split(':'))
+    exchange = Exchange(exchange)
+
+    try:
+        instrument = await cache.get_instrument(symbol, exchange)
+    except:
+        try:
+            instrument = await _get_instrument_from_origin(symbol, exchange)
+            await cache.save_instrument(instrument)
+
+        except Exception as e:
+            logger.debug(e)
+
+    return instrument
+
+
 async def get_bar_list(
     ticker: str, timeframe: Timeframe, from_t: int, to_t: int
 ) -> BarList:
-    exchange, symbol = tuple(ticker.split(':'))
-    exchange = Exchange(exchange)
-    type = _get_instrument_type_by_exchange(exchange)
-    instrument = Instrument(
-        symbol=symbol, exchange=exchange, timeframe=timeframe, type=type
-    )
+    instrument = await get_instrument(ticker)
     range = Range(from_t=from_t, to_t=to_t)
 
     cache_ranges = await cache.get_ranges(instrument, timeframe)
@@ -67,6 +79,14 @@ async def bar_list_to_chart_data(data: BarList) -> ChartData:
         chart_data.next_time = last_ts
 
     return chart_data
+
+
+async def _get_instrument_from_origin(symbol: str, exchange: Exchange) -> Instrument:
+    instrument = await ibc.get_instrument(symbol, exchange)
+
+    logger.debug(f'Received instrument from origin: {instrument}')
+
+    return instrument
 
 
 async def _get_bars_from_origin(
