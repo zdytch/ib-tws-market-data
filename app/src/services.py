@@ -124,3 +124,15 @@ def _calculate_missing_ranges(
         missing_ranges.append(Range(from_t=next_from_t, to_t=within_range.to_t))
 
     return missing_ranges
+
+
+def _is_session_open(instrument: Instrument):
+    return (
+        instrument.nearest_session.open_t
+        <= int(datetime.now(pytz.utc).timestamp())
+        < instrument.nearest_session.close_t
+    )
+
+
+def _is_session_up_to_date(instrument: Instrument):
+    instrument.nearest_session.close_t > int(datetime.now(pytz.utc).timestamp())
