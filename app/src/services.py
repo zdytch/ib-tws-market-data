@@ -1,6 +1,5 @@
 from schemas import (
     Timeframe,
-    InstrumentType,
     Exchange,
     Bar,
     ChartData,
