@@ -1,12 +1,11 @@
 from schemas import (
     Timeframe,
-    InstrumentType,
     Exchange,
     Bar,
     ChartData,
     Range,
     Instrument,
-    BarData,
+    BarList,
 )
 from ib_connector import IBConnector
 from datetime import datetime
@@ -17,18 +16,30 @@ from loguru import logger
 ibc = IBConnector()
 
 
-async def get_bar_data(
-    ticker: str, timeframe: Timeframe, from_t: int, to_t: int
-) -> BarData:
+async def get_instrument(ticker: str) -> Instrument:
     exchange, symbol = tuple(ticker.split(':'))
     exchange = Exchange(exchange)
-    type = _get_instrument_type_by_exchange(exchange)
-    instrument = Instrument(
-        symbol=symbol, exchange=exchange, timeframe=timeframe, type=type
-    )
+
+    try:
+        instrument = await cache.get_instrument(symbol, exchange)
+    except:
+        try:
+            instrument = await _get_instrument_from_origin(symbol, exchange)
+            await cache.save_instrument(instrument)
+
+        except Exception as e:
+            logger.debug(e)
+
+    return instrument
+
+
+async def get_bar_list(
+    ticker: str, timeframe: Timeframe, from_t: int, to_t: int
+) -> BarList:
+    instrument = await get_instrument(ticker)
     range = Range(from_t=from_t, to_t=to_t)
 
-    cache_ranges = await cache.get_ranges(instrument)
+    cache_ranges = await cache.get_ranges(instrument, timeframe)
     missing_ranges = _calculate_missing_ranges(range, cache_ranges)
 
     for missing_range in missing_ranges:
@@ -37,17 +48,19 @@ async def get_bar_data(
         )
 
         try:
-            origin_bars = await _get_bars_from_origin(instrument, missing_range)
-            await cache.save_bars(instrument, missing_range, origin_bars)
+            origin_bars = await _get_bars_from_origin(
+                instrument, timeframe, missing_range
+            )
+            await cache.save_bars(instrument, timeframe, missing_range, origin_bars)
         except Exception as e:
             logger.debug(e)
 
-    bars = await cache.get_bars(instrument, range)
+    bars = await cache.get_bars(instrument, timeframe, range)
 
-    return BarData(instrument=instrument, bars=bars)
+    return BarList(instrument=instrument, timeframe=timeframe, bars=bars)
 
 
-async def bar_data_to_chart_data(data: BarData) -> ChartData:
+async def bar_list_to_chart_data(data: BarList) -> ChartData:
     chart_data = ChartData()
 
     for bar in data.bars:
@@ -61,17 +74,27 @@ async def bar_data_to_chart_data(data: BarData) -> ChartData:
     if data.bars:
         chart_data.s = 'ok'
     else:
-        last_ts = await cache.get_last_timestamp(data.instrument)
+        last_ts = await cache.get_last_timestamp(data.instrument, data.timeframe)
         chart_data.next_time = last_ts
 
     return chart_data
 
 
-async def _get_bars_from_origin(instrument: Instrument, range: Range) -> list[Bar]:
+async def _get_instrument_from_origin(symbol: str, exchange: Exchange) -> Instrument:
+    instrument = await ibc.get_instrument(symbol, exchange)
+
+    logger.debug(f'Received instrument from origin: {instrument}')
+
+    return instrument
+
+
+async def _get_bars_from_origin(
+    instrument: Instrument, timeframe: Timeframe, range: Range
+) -> list[Bar]:
     from_dt = datetime.fromtimestamp(range.from_t, pytz.utc)
     to_dt = datetime.fromtimestamp(range.to_t, pytz.utc)
 
-    bars = await ibc.get_historical_bars(instrument, from_dt, to_dt)
+    bars = await ibc.get_historical_bars(instrument, timeframe, from_dt, to_dt)
 
     if bars:
         logger.debug(
@@ -102,12 +125,13 @@ def _calculate_missing_ranges(
     return missing_ranges
 
 
-def _get_instrument_type_by_exchange(exchange: Exchange) -> InstrumentType:
-    if exchange in (Exchange.NASDAQ, Exchange.NYSE):
-        instrument_type = InstrumentType.STOCK
-    elif exchange in (Exchange.GLOBEX, Exchange.ECBOT, Exchange.NYMEX):
-        instrument_type = InstrumentType.FUTURE
-    else:
-        raise ValueError(f'Cannot get instrument type, exchange unknown: {exchange}')
+def _is_session_open(instrument: Instrument):
+    return (
+        instrument.nearest_session.open_t
+        <= int(datetime.now(pytz.utc).timestamp())
+        < instrument.nearest_session.close_t
+    )
 
-    return instrument_type
+
+def _is_session_up_to_date(instrument: Instrument):
+    instrument.nearest_session.close_t > int(datetime.now(pytz.utc).timestamp())

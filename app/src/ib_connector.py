@@ -1,5 +1,5 @@
 from ib_insync import IB, Contract, Stock, ContFuture
-from schemas import InstrumentType, Bar, Instrument
+from schemas import Timeframe, InstrumentType, Bar, Instrument, Exchange
 from datetime import datetime
 import ib_utils
 from loguru import logger
@@ -14,15 +14,41 @@ class IBConnector:
     def is_connected(self) -> bool:
         return self._ib.isConnected()
 
+    async def get_instrument(self, symbol: str, exchange: Exchange) -> Instrument:
+        await self._connect()
+
+        contract = await self._get_contract(symbol, exchange)
+        type = ib_utils.get_instrument_type_by_exchange(exchange)
+        is_stock = type == InstrumentType.STOCK
+        details = await self._ib.reqContractDetailsAsync(contract)
+        description = details[0].longName
+        tick_size = 0.01 if is_stock else details[0].minTick
+        multiplier = 1.0 if is_stock else contract.multiplier
+        trading_hours = details[0].liquidHours if is_stock else details[0].tradingHours
+        nearest_session = ib_utils.get_nearest_trading_session(
+            trading_hours, details[0].timeZoneId
+        )
+
+        return Instrument(
+            symbol=symbol,
+            exchange=exchange,
+            type=type,
+            description=description,
+            tick_size=tick_size,
+            multiplier=multiplier,
+            nearest_session=nearest_session,
+        )
+
     async def get_historical_bars(
         self,
         instrument: Instrument,
+        timeframe: Timeframe,
         from_dt: datetime,
         to_dt: datetime,
     ) -> list[Bar]:
         await self._connect()
 
-        contract = await self._get_contract(instrument)
+        contract = await self._get_contract(instrument.symbol, instrument.exchange)
         is_stock = instrument.type == InstrumentType.STOCK
         volume_multiplier = 100 if is_stock else 1
 
@@ -30,7 +56,7 @@ class IBConnector:
             contract=contract,
             endDateTime=to_dt,
             durationStr=ib_utils.duration_to_ib(from_dt, to_dt),
-            barSizeSetting=ib_utils.timeframe_to_ib(instrument.timeframe),
+            barSizeSetting=ib_utils.timeframe_to_ib(timeframe),
             whatToShow='TRADES',
             useRTH=is_stock,
             formatDate=2,
@@ -39,8 +65,9 @@ class IBConnector:
 
         bars = []
         for ib_bar in ib_bars:
-            bar = ib_utils.bar_from_ib(ib_bar, volume_multiplier)
-            bars.append(bar)
+            if from_dt <= ib_bar.date <= to_dt:
+                bar = ib_utils.bar_from_ib(ib_bar, volume_multiplier)
+                bars.append(bar)
 
         return bars
 
@@ -51,17 +78,16 @@ class IBConnector:
             except Exception as error:
                 logger.error(error)
 
-    async def _get_contract(self, instrument: Instrument) -> Contract:
-        if instrument.type == InstrumentType.STOCK:
-            contract = Stock(instrument.symbol, f'SMART:{instrument.exchange}', 'USD')
-        elif instrument.type == InstrumentType.FUTURE:
-            contract = ContFuture(
-                instrument.symbol, f'SMART:{instrument.exchange}', currency='USD'
-            )
+    async def _get_contract(self, symbol: str, exchange: Exchange) -> Contract:
+        type = ib_utils.get_instrument_type_by_exchange(exchange)
+        if type == InstrumentType.STOCK:
+            contract = Stock(symbol, f'SMART:{exchange}', 'USD')
+        elif type == InstrumentType.FUTURE:
+            contract = ContFuture(symbol, f'SMART:{exchange}', currency='USD')
         else:
             raise ValueError(
-                f'Cannot get contract for type {instrument.type}, '
-                f'symbol {instrument.symbol}, exchange {instrument.exchange}'
+                f'Cannot get contract for type {type}, '
+                f'symbol {symbol}, exchange {exchange}'
             )
 
         if contract:
