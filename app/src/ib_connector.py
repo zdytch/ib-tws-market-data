@@ -65,8 +65,9 @@ class IBConnector:
 
         bars = []
         for ib_bar in ib_bars:
-            bar = ib_utils.bar_from_ib(ib_bar, volume_multiplier)
-            bars.append(bar)
+            if from_dt <= ib_bar.date <= to_dt:
+                bar = ib_utils.bar_from_ib(ib_bar, volume_multiplier)
+                bars.append(bar)
 
         return bars
 
