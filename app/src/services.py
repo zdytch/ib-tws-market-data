@@ -44,6 +44,12 @@ async def get_bar_list(
     missing_ranges = _calculate_missing_ranges(range, cache_ranges)
 
     for missing_range in missing_ranges:
+        # If missing range doesn't overlap with open session range
+        if not _is_overlap_open_session_range(instrument, missing_range):
+            # Extend missing range by 1 day to overlap possible gaps in cache
+            missing_range.from_t -= 86400
+            missing_range.to_t += 86400
+
         logger.debug(
             f'Missing bars in cache. Retreiving from origin... Instrument: {instrument}. Range: {missing_range}'
         )
@@ -124,6 +130,16 @@ def _calculate_missing_ranges(
         missing_ranges.append(Range(from_t=next_from_t, to_t=within_range.to_t))
 
     return missing_ranges
+
+
+def _is_overlap_open_session_range(instrument: Instrument, range: Range) -> bool:
+    session = instrument.nearest_session
+
+    return (
+        (range.from_t >= session.open_t and range.to_t < session.close_t)
+        or range.from_t < session.open_t < range.to_t
+        or range.from_t < session.close_t < range.to_t
+    )
 
 
 def _is_session_open(instrument: Instrument) -> bool:
