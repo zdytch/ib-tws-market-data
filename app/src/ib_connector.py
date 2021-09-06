@@ -18,7 +18,7 @@ class IBConnector:
         await self._connect()
 
         contract = await self._get_contract(symbol, exchange)
-        type = contract.secType
+        type = ib_utils.get_instrument_type_by_exchange(exchange)
         is_stock = type == InstrumentType.STOCK
         details = await self._ib.reqContractDetailsAsync(contract)
         description = details[0].longName
