@@ -61,7 +61,7 @@ async def get_last_timestamp(instrument: Instrument, timeframe: Timeframe) -> in
 
 
 async def save_bars(
-    instrument: Instrument, timeframe: Timeframe, range: Range, bars: list[Bar]
+    instrument: Instrument, timeframe: Timeframe, bars: list[Bar]
 ) -> None:
     if bars:
         collection, _ = _get_collections(instrument, timeframe)
@@ -72,7 +72,8 @@ async def save_bars(
 
         min_ts = min(bars, key=lambda bar: bar.t).t
         max_ts = max(bars, key=lambda bar: bar.t).t
-        await save_range(instrument, timeframe, Range(from_t=min_ts, to_t=max_ts))
+        range = Range(from_t=min_ts, to_t=max_ts)
+        await save_range(instrument, timeframe, range)
 
         logger.debug(f'Bars saved to cache. Instrument: {instrument}. Range: {range}')
 
