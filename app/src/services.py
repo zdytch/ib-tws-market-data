@@ -6,7 +6,7 @@ from schemas import (
     ChartData,
     Range,
     Instrument,
-    BarData,
+    BarList,
 )
 from ib_connector import IBConnector
 from datetime import datetime
@@ -17,9 +17,9 @@ from loguru import logger
 ibc = IBConnector()
 
 
-async def get_bar_data(
+async def get_bar_list(
     ticker: str, timeframe: Timeframe, from_t: int, to_t: int
-) -> BarData:
+) -> BarList:
     exchange, symbol = tuple(ticker.split(':'))
     exchange = Exchange(exchange)
     type = _get_instrument_type_by_exchange(exchange)
@@ -46,10 +46,10 @@ async def get_bar_data(
 
     bars = await cache.get_bars(instrument, timeframe, range)
 
-    return BarData(instrument=instrument, timeframe=timeframe, bars=bars)
+    return BarList(instrument=instrument, timeframe=timeframe, bars=bars)
 
 
-async def bar_data_to_chart_data(data: BarData) -> ChartData:
+async def bar_list_to_chart_data(data: BarList) -> ChartData:
     chart_data = ChartData()
 
     for bar in data.bars:

@@ -63,7 +63,7 @@ class Range(BaseModel):
         )
 
 
-class BarData(BaseModel):
+class BarList(BaseModel):
     instrument: Instrument
     timeframe: Timeframe
     bars: list[Bar]
