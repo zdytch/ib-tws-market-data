@@ -23,7 +23,7 @@ class IBConnector:
     ) -> list[Bar]:
         await self._connect()
 
-        contract = await self._get_contract(instrument)
+        contract = await self._get_contract(instrument.symbol, instrument.exchange)
         is_stock = instrument.type == InstrumentType.STOCK
         volume_multiplier = 100 if is_stock else 1
 
@@ -52,17 +52,16 @@ class IBConnector:
             except Exception as error:
                 logger.error(error)
 
-    async def _get_contract(self, instrument: Instrument) -> Contract:
-        if instrument.type == InstrumentType.STOCK:
-            contract = Stock(instrument.symbol, f'SMART:{instrument.exchange}', 'USD')
-        elif instrument.type == InstrumentType.FUTURE:
-            contract = ContFuture(
-                instrument.symbol, f'SMART:{instrument.exchange}', currency='USD'
-            )
+    async def _get_contract(self, symbol: str, exchange: Exchange) -> Contract:
+        type = ib_utils.get_instrument_type_by_exchange(exchange)
+        if type == InstrumentType.STOCK:
+            contract = Stock(symbol, f'SMART:{exchange}', 'USD')
+        elif type == InstrumentType.FUTURE:
+            contract = ContFuture(symbol, f'SMART:{exchange}', currency='USD')
         else:
             raise ValueError(
-                f'Cannot get contract for type {instrument.type}, '
-                f'symbol {instrument.symbol}, exchange {instrument.exchange}'
+                f'Cannot get contract for type {type}, '
+                f'symbol {symbol}, exchange {exchange}'
             )
 
         if contract:

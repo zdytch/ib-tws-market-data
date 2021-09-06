@@ -1,6 +1,6 @@
 from typing import Union
 from ib_insync import BarData
-from schemas import Bar, Timeframe
+from schemas import Bar, Timeframe, Exchange, InstrumentType
 from datetime import datetime, date, time
 import math
 import pytz
@@ -59,3 +59,14 @@ def bar_from_ib(ib_bar: BarData, volume_multiplier: int) -> Bar:
         v=int(ib_bar.volume) * volume_multiplier,
         t=timestamp_from_ib(ib_bar.date),
     )
+
+
+def get_instrument_type_by_exchange(exchange: Exchange) -> InstrumentType:
+    if exchange in (Exchange.NASDAQ, Exchange.NYSE):
+        instrument_type = InstrumentType.STOCK
+    elif exchange in (Exchange.GLOBEX, Exchange.ECBOT, Exchange.NYMEX):
+        instrument_type = InstrumentType.FUTURE
+    else:
+        raise ValueError(f'Cannot get instrument type, exchange unknown: {exchange}')
+
+    return instrument_type
