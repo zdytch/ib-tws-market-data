@@ -31,14 +31,10 @@ class InstrumentType(str, Enum):
 class Instrument(BaseModel):
     symbol: str
     exchange: Exchange
-    timeframe: Timeframe
     type: InstrumentType
 
     def __str__(self):
-        return (
-            f'symbol={self.symbol} exchange={self.exchange} '
-            f'timeframe={self.timeframe} type={self.type}'
-        )
+        return f'symbol={self.symbol} exchange={self.exchange} type={self.type}'
 
 
 class Bar(BaseModel):
@@ -69,6 +65,7 @@ class Range(BaseModel):
 
 class BarData(BaseModel):
     instrument: Instrument
+    timeframe: Timeframe
     bars: list[Bar]
 
 

@@ -1,13 +1,15 @@
-from schemas import Instrument, Bar, Range
+from schemas import Timeframe, Instrument, Bar, Range
 from config.db import database
 from motor.motor_asyncio import AsyncIOMotorCollection as Collection
 from pymongo.errors import BulkWriteError
 from loguru import logger
 
 
-async def get_bars(instrument: Instrument, range: Range) -> list[Bar]:
+async def get_bars(
+    instrument: Instrument, timeframe: Timeframe, range: Range
+) -> list[Bar]:
     bars = []
-    collection, _ = _get_collections(instrument)
+    collection, _ = _get_collections(instrument, timeframe)
 
     cursor = collection.find({'t': {'$gte': range.from_t, '$lte': range.to_t}}).sort(
         't'
@@ -19,10 +21,10 @@ async def get_bars(instrument: Instrument, range: Range) -> list[Bar]:
     return bars
 
 
-async def get_last_timestamp(instrument: Instrument) -> int:
+async def get_last_timestamp(instrument: Instrument, timeframe: Timeframe) -> int:
     # TODO: Find better approach
     ts = 0
-    collection, _ = _get_collections(instrument)
+    collection, _ = _get_collections(instrument, timeframe)
     bar_as_list = await collection.find().sort('t', -1).limit(1).to_list(1)
 
     if bar_as_list:
@@ -32,9 +34,11 @@ async def get_last_timestamp(instrument: Instrument) -> int:
     return ts
 
 
-async def save_bars(instrument: Instrument, range: Range, bars: list[Bar]) -> None:
+async def save_bars(
+    instrument: Instrument, timeframe: Timeframe, range: Range, bars: list[Bar]
+) -> None:
     if bars:
-        collection, _ = _get_collections(instrument)
+        collection, _ = _get_collections(instrument, timeframe)
         try:
             await collection.insert_many([bar.dict() for bar in bars])
         except BulkWriteError:
@@ -42,18 +46,20 @@ async def save_bars(instrument: Instrument, range: Range, bars: list[Bar]) -> No
 
         min_ts = min(bars, key=lambda bar: bar.t).t
         max_ts = max(bars, key=lambda bar: bar.t).t
-        await save_range(instrument, Range(from_t=min_ts, to_t=max_ts))
+        await save_range(instrument, timeframe, Range(from_t=min_ts, to_t=max_ts))
 
         logger.debug(f'Bars saved to cache. Instrument: {instrument}. Range: {range}')
 
 
-async def get_ranges(instrument: Instrument) -> list[Range]:
-    _, collection = _get_collections(instrument)
+async def get_ranges(instrument: Instrument, timeframe: Timeframe) -> list[Range]:
+    _, collection = _get_collections(instrument, timeframe)
     return [Range(**dic) for dic in await collection.find().to_list(999)]
 
 
-async def save_range(instrument: Instrument, range: Range) -> None:
-    _, collection = _get_collections(instrument)
+async def save_range(
+    instrument: Instrument, timeframe: Timeframe, range: Range
+) -> None:
+    _, collection = _get_collections(instrument, timeframe)
 
     await collection.insert_one(range.dict())
 
@@ -92,8 +98,10 @@ async def _perform_range_defragmentation(
             pass
 
 
-def _get_collections(instrument: Instrument) -> tuple[Collection, Collection]:
-    name = f'{instrument.symbol}_{instrument.exchange}_{instrument.timeframe}'.lower()
+def _get_collections(
+    instrument: Instrument, timeframe: Timeframe
+) -> tuple[Collection, Collection]:
+    name = f'{instrument.symbol}_{instrument.exchange}_{timeframe}'.lower()
     bar_col_name = f'{name}_bars'
     range_col_name = f'{name}_ranges'
 

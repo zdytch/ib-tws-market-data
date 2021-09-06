@@ -1,5 +1,5 @@
 from ib_insync import IB, Contract, Stock, ContFuture
-from schemas import InstrumentType, Bar, Instrument
+from schemas import Timeframe, InstrumentType, Bar, Instrument
 from datetime import datetime
 import ib_utils
 from loguru import logger
@@ -17,6 +17,7 @@ class IBConnector:
     async def get_historical_bars(
         self,
         instrument: Instrument,
+        timeframe: Timeframe,
         from_dt: datetime,
         to_dt: datetime,
     ) -> list[Bar]:
@@ -30,7 +31,7 @@ class IBConnector:
             contract=contract,
             endDateTime=to_dt,
             durationStr=ib_utils.duration_to_ib(from_dt, to_dt),
-            barSizeSetting=ib_utils.timeframe_to_ib(instrument.timeframe),
+            barSizeSetting=ib_utils.timeframe_to_ib(timeframe),
             whatToShow='TRADES',
             useRTH=is_stock,
             formatDate=2,
