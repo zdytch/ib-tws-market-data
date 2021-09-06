@@ -92,7 +92,7 @@ async def bar_list_to_chart_data(data: BarList) -> ChartData:
 async def get_info(ticker: str) -> dict:
     instrument = await get_instrument(ticker)
     instrument_type = _instrument_type_to_chart(instrument.type)
-    session, timezone = _exchange_schedule_to_chart(instrument.exchange)
+    timezone, session = _exchange_schedule_to_chart(instrument.exchange)
     price_scale = 10 ** abs(
         Decimal(instrument.tick_size).normalize().as_tuple().exponent
     )
