@@ -51,6 +51,9 @@ class Session(ormar.Model):
     open_t: int = ormar.Integer(minimum=0, default=0)  # type: ignore
     close_t: int = ormar.Integer(minimum=0, default=0)  # type: ignore
 
+    class Meta(BaseMeta):
+        pass
+
     def __str__(self):
         return (
             f'open_t={self.open_t}({datetime.fromtimestamp(self.open_t)}) '

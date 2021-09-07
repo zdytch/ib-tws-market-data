@@ -24,6 +24,9 @@ class BarLot(ormar.Model):
     )
     timeframe: Timeframe = ormar.String(max_length=3, choices=list(Timeframe))  # type: ignore
 
+    class Meta(BaseMeta):
+        pass
+
 
 class Bar(ormar.Model):
     id: int = ormar.Integer(primary_key=True)  # type: ignore
