@@ -1,5 +1,5 @@
 from .schemas import History, Info, Config
-from bars.models import BarLot, Range
+from bars.models import Range, Timeframe
 from bars import services as bar_services
 from instruments.models import Exchange, InstrumentType
 from instruments import services as instrument_services
@@ -8,9 +8,10 @@ from instruments import services as instrument_services
 async def get_history(ticker: str, timeframe: str, from_t: int, to_t: int) -> History:
     history = History()
     exchange, symbol = _split_ticker(ticker)
-    bar_lot = await BarLot.objects.get(
-        instrument__symbol=symbol, instrument__exchange=exchange, timeframe=timeframe
+    instrument = await instrument_services.get_instrument(
+        symbol=symbol, exchange=exchange
     )
+    bar_lot = await bar_services.get_bar_lot(instrument, Timeframe(timeframe))
     bars = await bar_services.get_bars(bar_lot, Range(from_t=from_t, to_t=to_t))
 
     for bar in bars:

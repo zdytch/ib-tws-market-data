@@ -7,6 +7,12 @@ import pytz
 from loguru import logger
 
 
+async def get_bar_lot(instrument: Instrument, timeframe: Timeframe) -> BarLot:
+    return await BarLot.objects.select_related('instrument').get_or_create(
+        instrument=instrument, timeframe=timeframe
+    )
+
+
 async def get_bars(bar_lot: BarLot, range: Range) -> list[Bar]:
     existing_ranges = await Range.objects.filter(bar_lot=bar_lot).all()
     missing_ranges = _calculate_missing_ranges(range, existing_ranges)
