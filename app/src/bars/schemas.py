@@ -1,7 +1,8 @@
 from pydantic import BaseModel
+from instruments.schemas import Instrument
 from enum import Enum
 from datetime import datetime
-from instruments.schemas import Instrument
+from decimal import Decimal
 
 
 class Timeframe(str, Enum):
@@ -16,10 +17,10 @@ class Timeframe(str, Enum):
 
 
 class Bar(BaseModel):
-    o: float
-    h: float
-    l: float
-    c: float
+    o: Decimal
+    h: Decimal
+    l: Decimal
+    c: Decimal
     v: int
     t: int
 

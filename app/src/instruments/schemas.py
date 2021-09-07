@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from enum import Enum
 from datetime import datetime
+from decimal import Decimal
 
 
 class Exchange(str, Enum):
@@ -32,8 +33,8 @@ class Instrument(BaseModel):
     exchange: Exchange
     type: InstrumentType
     description: str
-    tick_size: float
-    multiplier: float
+    tick_size: Decimal
+    multiplier: Decimal
     nearest_session: TradingSession
 
     def __str__(self):
