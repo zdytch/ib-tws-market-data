@@ -1,8 +1,7 @@
 import ormar
 from config.db import BaseMeta
 from enum import Enum
-
-# from datetime import datetime
+from datetime import datetime
 from decimal import Decimal
 
 
@@ -17,17 +16,6 @@ class Exchange(str, Enum):
 class InstrumentType(str, Enum):
     STOCK = 'STK'
     FUTURE = 'FUT'
-
-
-# class TradingSession(BaseModel):
-#     open_t: int
-#     close_t: int
-
-#     def __str__(self):
-#         return (
-#             f'open_t={self.open_t}({datetime.fromtimestamp(self.open_t)}) '
-#             f'close_t={self.close_t}({datetime.fromtimestamp(self.close_t)})'
-#         )
 
 
 class Instrument(ormar.Model):
@@ -52,4 +40,19 @@ class Instrument(ormar.Model):
             f'symbol={self.symbol} exchange={self.exchange} type={self.type} '
             f'description={self.description} tick_size={self.tick_size} multiplier={self.multiplier} '
             f'nearest_session={self.nearest_session}'
+        )
+
+
+class Session(ormar.Model):
+    id: int = ormar.Integer(primary_key=True)  # type: ignore
+    instrument: Instrument = ormar.ForeignKey(
+        Instrument, related_name='session', unique=True, ondelete='CASCADE'
+    )
+    open_t: int = ormar.Integer(minimum=0, default=0)  # type: ignore
+    close_t: int = ormar.Integer(minimum=0, default=0)  # type: ignore
+
+    def __str__(self):
+        return (
+            f'open_t={self.open_t}({datetime.fromtimestamp(self.open_t)}) '
+            f'close_t={self.close_t}({datetime.fromtimestamp(self.close_t)})'
         )
