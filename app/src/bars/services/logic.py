@@ -1,5 +1,6 @@
 from bars.models import BarLot, Bar, Range, Timeframe
 from instruments.models import Instrument
+from instruments import services as instrument_services
 from . import crud
 from ib.connector import ib_connector
 from datetime import datetime
@@ -20,7 +21,9 @@ async def get_bars(bar_lot: BarLot, range: Range) -> list[Bar]:
 
     for missing_range in missing_ranges:
         # If missing range doesn't overlap with open session range
-        if not _is_overlap_open_session_range(instrument, missing_range):
+        if not await instrument_services.is_overlap_open_session(
+            instrument, missing_range.from_t, missing_range.to_t
+        ):
             # Extend missing range by 1 day to overlap possible gaps in db
             missing_range.from_t -= 86400
             missing_range.to_t += 86400
@@ -82,13 +85,3 @@ def _calculate_missing_ranges(
         missing_ranges.append(Range(from_t=next_from_t, to_t=within_range.to_t))
 
     return missing_ranges
-
-
-def _is_overlap_open_session_range(instrument: Instrument, range: Range) -> bool:
-    session = instrument.nearest_session
-
-    return (
-        (range.from_t >= session.open_t and range.to_t < session.close_t)
-        or range.from_t < session.open_t < range.to_t
-        or range.from_t < session.close_t < range.to_t
-    )

@@ -29,6 +29,18 @@ async def get_session(instrument: Instrument) -> Session:
     return session
 
 
+async def is_overlap_open_session(
+    instrument: Instrument, from_t: int, to_t: int
+) -> bool:
+    session = await get_session(instrument)
+
+    return (
+        (from_t >= session.open_t and to_t < session.close_t)
+        or from_t < session.open_t < to_t
+        or from_t < session.close_t < to_t
+    )
+
+
 async def _get_instrument_from_origin(symbol: str, exchange: Exchange) -> Instrument:
     instrument = await ib_connector.get_instrument(symbol, exchange)
 
