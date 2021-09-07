@@ -17,19 +17,17 @@ class Timeframe(str, Enum):
     MONTH = 'M'
 
 
-class BarList(ormar.Model):
+class BarLot(ormar.Model):
     id: int = ormar.Integer(primary_key=True)  # type: ignore
     instrument: Instrument = ormar.ForeignKey(
-        Instrument, related_name='barlists', ondelete='CASCADE'
+        Instrument, skip_reverse=True, ondelete='CASCADE'
     )
     timeframe: Timeframe = ormar.String(max_length=3, choices=list(Timeframe))  # type: ignore
 
 
 class Bar(ormar.Model):
     id: int = ormar.Integer(primary_key=True)  # type: ignore
-    barlist: BarList = ormar.ForeignKey(
-        BarList, related_name='bars', ondelete='CASCADE'
-    )
+    bar_lot: BarLot = ormar.ForeignKey(BarLot, related_name='bars', ondelete='CASCADE')
     o: Decimal = ormar.Decimal(max_digits=18, decimal_places=8)  # type: ignore
     h: Decimal = ormar.Decimal(max_digits=18, decimal_places=8)  # type: ignore
     l: Decimal = ormar.Decimal(max_digits=18, decimal_places=8)  # type: ignore
@@ -38,7 +36,7 @@ class Bar(ormar.Model):
     t: int = ormar.Integer(minimum=0, default=0, unique=True)  # type: ignore
 
     class Meta(BaseMeta):
-        pass
+        orders_by = ['t']
 
     def __str__(self):
         return (
@@ -49,8 +47,8 @@ class Bar(ormar.Model):
 
 class Range(ormar.Model):
     id: int = ormar.Integer(primary_key=True)  # type: ignore
-    barlist: BarList = ormar.ForeignKey(
-        BarList, related_name='ranges', ondelete='CASCADE'
+    bar_lot: BarLot = ormar.ForeignKey(
+        BarLot, related_name='ranges', ondelete='CASCADE'
     )
     from_t: int = ormar.Integer(minimum=0, default=0)  # type: ignore
     to_t: int = ormar.Integer(minimum=0, default=0)  # type: ignore
