@@ -6,7 +6,7 @@ from schemas import (
     Instrument,
     BarList,
 )
-from ib_connector import IBConnector
+from ib.connector import IBConnector
 from datetime import datetime
 from time import time
 from decimal import Decimal

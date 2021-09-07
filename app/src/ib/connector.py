@@ -1,7 +1,7 @@
 from ib_insync import IB, Contract, Stock, ContFuture
 from schemas import Timeframe, InstrumentType, Bar, Instrument, Exchange
 from datetime import datetime
-import ib_utils
+from . import utils
 from loguru import logger
 
 
@@ -18,14 +18,14 @@ class IBConnector:
         await self._connect()
 
         contract = await self._get_contract(symbol, exchange)
-        type = ib_utils.get_instrument_type_by_exchange(exchange)
+        type = utils.get_instrument_type_by_exchange(exchange)
         is_stock = type == InstrumentType.STOCK
         details = await self._ib.reqContractDetailsAsync(contract)
         description = details[0].longName
         tick_size = 0.01 if is_stock else details[0].minTick
         multiplier = 1.0 if is_stock else contract.multiplier
         trading_hours = details[0].liquidHours if is_stock else details[0].tradingHours
-        nearest_session = ib_utils.get_nearest_trading_session(
+        nearest_session = utils.get_nearest_trading_session(
             trading_hours, details[0].timeZoneId
         )
 
@@ -55,8 +55,8 @@ class IBConnector:
         ib_bars = await self._ib.reqHistoricalDataAsync(
             contract=contract,
             endDateTime=to_dt,
-            durationStr=ib_utils.duration_to_ib(from_dt, to_dt),
-            barSizeSetting=ib_utils.timeframe_to_ib(timeframe),
+            durationStr=utils.duration_to_ib(from_dt, to_dt),
+            barSizeSetting=utils.timeframe_to_ib(timeframe),
             whatToShow='TRADES',
             useRTH=is_stock,
             formatDate=2,
@@ -65,13 +65,13 @@ class IBConnector:
 
         bars = []
         for ib_bar in ib_bars:
-            bar = ib_utils.bar_from_ib(ib_bar, volume_multiplier)
+            bar = utils.bar_from_ib(ib_bar, volume_multiplier)
             if int(from_dt.timestamp()) <= bar.t <= int(to_dt.timestamp()):
                 bars.append(bar)
 
         return bars
 
-    async def _connect(self, client_id=1):
+    async def _connect(self, client_id=14):
         if not self.is_connected:
             try:
                 await self._ib.connectAsync('trixter-ib', 4002, client_id)
@@ -79,7 +79,7 @@ class IBConnector:
                 logger.error(error)
 
     async def _get_contract(self, symbol: str, exchange: Exchange) -> Contract:
-        type = ib_utils.get_instrument_type_by_exchange(exchange)
+        type = utils.get_instrument_type_by_exchange(exchange)
         if type == InstrumentType.STOCK:
             contract = Stock(symbol, f'SMART:{exchange}', 'USD')
         elif type == InstrumentType.FUTURE:
