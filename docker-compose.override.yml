@@ -1,18 +1,18 @@
 version: '3.7'
 
 services:
-  dataserver-app:
+  mdc-app:
     volumes:
       - ./app/src:/src
     ports:
       - 8000:8000
       - 8888:8888
 
-  dataserver-db:
+  mdc-db:
     ports:
-      - 27017:27017
+      - 5432:5432
 
-  dataserver-ib:
+  mdc-ib:
     environment:
       - VNC_PASSWORD=$IB_VNC_PASSWORD
     ports:

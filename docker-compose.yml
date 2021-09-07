@@ -1,31 +1,37 @@
 version: '3.8'
 
 services:
-  dataserver-app:
+  mdc-app:
     environment:
       - TZ=$TIME_ZONE
       - APP_DEBUG=$APP_DEBUG
       - APP_SECRET_KEY=$APP_SECRET_KEY
-    container_name: dataserver-app
+      - POSTGRES_DB=$POSTGRES_DB
+      - POSTGRES_USER=$POSTGRES_USER
+      - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+    container_name: mdc-app
     restart: unless-stopped
     build: ./app
     depends_on:
-      - dataserver-db
+      - mdc-db
 
-  dataserver-db:
+  mdc-db:
     environment:
       - TZ=$TIME_ZONE
-    container_name: dataserver-db
-    image: mongo
+      - POSTGRES_DB=$POSTGRES_DB
+      - POSTGRES_USER=$POSTGRES_USER
+      - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+    container_name: mdc-db
+    image: postgres:13-alpine
     restart: unless-stopped
   
-  dataserver-ib:
+  mdc-ib:
     environment:
       - TZ=$TIME_ZONE
       - IB_APP=$IB_APP
       - IB_MODE=$IB_MODE
       - IB_USER=$IB_USER
       - IB_PASSWORD=$IB_PASSWORD
-    container_name: dataserver-ib
+    container_name: mdc-ib
     image: zdytch/ib-dockerized
     restart: unless-stopped
