@@ -1,37 +1,17 @@
 from schemas import (
     Timeframe,
-    Exchange,
     Bar,
     Range,
     Instrument,
     BarList,
 )
-from ib.connector import IBConnector
+from instruments.schemas import Exchange
+from ib.connector import ib_connector
 from datetime import datetime
-from time import time
 from decimal import Decimal
 import pytz
 import cache
 from loguru import logger
-
-ibc = IBConnector()
-
-
-async def get_instrument(ticker: str) -> Instrument:
-    exchange, symbol = tuple(ticker.split(':'))
-    exchange = Exchange(exchange)
-
-    try:
-        instrument = await cache.get_instrument(symbol, exchange)
-    except:
-        try:
-            instrument = await _get_instrument_from_origin(symbol, exchange)
-            await cache.save_instrument(instrument)
-
-        except Exception as e:
-            logger.debug(e)
-
-    return instrument
 
 
 async def get_bar_list(
@@ -67,21 +47,13 @@ async def get_bar_list(
     return BarList(instrument=instrument, timeframe=timeframe, bars=bars)
 
 
-async def _get_instrument_from_origin(symbol: str, exchange: Exchange) -> Instrument:
-    instrument = await ibc.get_instrument(symbol, exchange)
-
-    logger.debug(f'Received instrument from origin: {instrument}')
-
-    return instrument
-
-
 async def _get_bars_from_origin(
     instrument: Instrument, timeframe: Timeframe, range: Range
 ) -> list[Bar]:
     from_dt = datetime.fromtimestamp(range.from_t, pytz.utc)
     to_dt = datetime.fromtimestamp(range.to_t, pytz.utc)
 
-    bars = await ibc.get_historical_bars(instrument, timeframe, from_dt, to_dt)
+    bars = await ib_connector.get_historical_bars(instrument, timeframe, from_dt, to_dt)
 
     if bars:
         logger.debug(
@@ -120,15 +92,3 @@ def _is_overlap_open_session_range(instrument: Instrument, range: Range) -> bool
         or range.from_t < session.open_t < range.to_t
         or range.from_t < session.close_t < range.to_t
     )
-
-
-def _is_session_open(instrument: Instrument) -> bool:
-    return (
-        instrument.nearest_session.open_t
-        <= int(time())
-        < instrument.nearest_session.close_t
-    )
-
-
-def _is_session_up_to_date(instrument: Instrument) -> bool:
-    return instrument.nearest_session.close_t > int(time())
