@@ -1,6 +1,6 @@
 from bars.models import BarLot, Bar, Range, Timeframe
 from instruments.models import Instrument
-from . import bar_crud, range_crud
+from . import crud
 from ib.connector import ib_connector
 from datetime import datetime
 import pytz
@@ -27,11 +27,13 @@ async def get_bars(bar_lot: BarLot, range: Range) -> list[Bar]:
             origin_bars = await _get_bars_from_origin(
                 instrument, bar_lot.timeframe, missing_range
             )
-            await bar_crud.create_bars(bar_lot, origin_bars)
+            await crud.create_bars(bar_lot, origin_bars)
+
+            logger.debug(f'Bars created. Instrument: {instrument}. Range: {range}')
         except Exception as e:
             logger.debug(e)
 
-    bars = await bar_crud.get_bars(bar_lot, range)
+    bars = await crud.get_bars(bar_lot, range)
 
     return bars
 
