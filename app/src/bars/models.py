@@ -57,7 +57,7 @@ class Range(ormar.Model):
     to_t: int = ormar.Integer(minimum=0, default=0)  # type: ignore
 
     class Meta(BaseMeta):
-        pass
+        orders_by = ['from_t']
 
     def __str__(self):
         return (
