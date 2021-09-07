@@ -65,7 +65,7 @@ async def _bar_list_to_history(bar_list: BarList) -> History:
         last_ts = await bar_services.get_last_timestamp(
             bar_list.instrument, bar_list.timeframe
         )
-        history.next_time = last_ts
+        history.nextTime = last_ts
 
     return history
 

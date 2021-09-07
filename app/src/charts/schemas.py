@@ -1,6 +1,5 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from decimal import Decimal
-from typing import Optional
 
 
 class History(BaseModel):
@@ -11,10 +10,7 @@ class History(BaseModel):
     v: list[int] = []
     t: list[int] = []
     s: str = 'no_data'
-    next_time: Optional[int] = Field(alias='nextTime')
-
-    class Config:
-        allow_population_by_field_name = True
+    nextTime: int = 0
 
 
 class Info(BaseModel):
