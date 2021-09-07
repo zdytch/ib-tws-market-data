@@ -1,4 +1,5 @@
-from schemas import Timeframe, Instrument, Bar, Range, Exchange
+from instruments.schemas import Instrument, Exchange
+from schemas import Timeframe, Bar, Range
 from config.db import database
 from motor.motor_asyncio import AsyncIOMotorCollection as Collection
 from pymongo.errors import BulkWriteError

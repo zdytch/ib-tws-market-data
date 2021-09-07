@@ -1,8 +1,10 @@
 from .schemas import ChartData
 from decimal import Decimal
+from instruments.schemas import Exchange, InstrumentType
+from instruments import services as instrument_services
 from .. import services as root_services
 from .. import cache
-from ..schemas import BarList, Timeframe, Exchange, InstrumentType
+from ..schemas import BarList, Timeframe
 
 
 async def get_history(ticker: str, timeframe: str, from_t: int, to_t: int) -> ChartData:
@@ -14,7 +16,7 @@ async def get_history(ticker: str, timeframe: str, from_t: int, to_t: int) -> Ch
 
 
 async def get_info(ticker: str) -> dict:
-    instrument = await root_services.get_instrument(ticker)
+    instrument = await instrument_services.get_instrument(ticker)
     instrument_type = _instrument_type_to_chart(instrument.type)
     timezone, session = _exchange_schedule_to_chart(instrument.exchange)
     price_scale = 10 ** abs(
