@@ -22,7 +22,7 @@ async def create_bars(
         range = Range(from_t=min_ts, to_t=max_ts)
         await range_crud.create_range(instrument, timeframe, range)
 
-        logger.debug(f'Bars saved to db. Instrument: {instrument}. Range: {range}')
+        logger.debug(f'Bars created. Instrument: {instrument}. Range: {range}')
 
 
 async def read_bars(
