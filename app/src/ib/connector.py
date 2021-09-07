@@ -1,5 +1,6 @@
 from ib_insync import IB, Contract, Stock, ContFuture
-from schemas import Timeframe, InstrumentType, Bar, Instrument, Exchange
+from instruments.schemas import Exchange, InstrumentType
+from schemas import Timeframe, Bar, Instrument
 from datetime import datetime
 from . import utils
 from loguru import logger
@@ -101,3 +102,6 @@ class IBConnector:
         self, req_id: int, error_code: int, error_string: str, contract: Contract
     ) -> None:
         logger.debug(f'{req_id} {error_code} {error_string} {contract}')
+
+
+ib_connector = IBConnector()
