@@ -1,6 +1,13 @@
-from motor import motor_asyncio
+import sqlalchemy
+import databases
+import ormar
 from .settings import DB_URL
 
-client = motor_asyncio.AsyncIOMotorClient(DB_URL)
+metadata = sqlalchemy.MetaData()
+engine = sqlalchemy.create_engine(DB_URL)
+database = databases.Database(DB_URL)
 
-database = client['mdc']
+
+class BaseMeta(ormar.ModelMeta):
+    metadata = metadata
+    database = database
