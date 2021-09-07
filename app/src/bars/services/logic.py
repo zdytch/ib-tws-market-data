@@ -1,19 +1,16 @@
-from bars.schemas import Bar, BarList, Timeframe, Range
+from bars.models import BarLot, Bar, Range, Timeframe
+from instruments.models import Instrument
 from . import bar_crud, range_crud
-from instruments.schemas import Instrument
 from ib.connector import ib_connector
 from datetime import datetime
 import pytz
 from loguru import logger
 
 
-async def get_bar_list(
-    instrument: Instrument, timeframe: Timeframe, from_t: int, to_t: int
-) -> BarList:
-    range = Range(from_t=from_t, to_t=to_t)
-
-    existing_ranges = await range_crud.read_ranges(instrument, timeframe)
+async def get_bars(bar_lot: BarLot, range: Range) -> list[Bar]:
+    existing_ranges = await Range.objects.filter(bar_lot=bar_lot).all()
     missing_ranges = _calculate_missing_ranges(range, existing_ranges)
+    instrument = bar_lot.instrument
 
     for missing_range in missing_ranges:
         # If missing range doesn't overlap with open session range
@@ -28,19 +25,19 @@ async def get_bar_list(
 
         try:
             origin_bars = await _get_bars_from_origin(
-                instrument, timeframe, missing_range
+                instrument, bar_lot.timeframe, missing_range
             )
-            await bar_crud.create_bars(instrument, timeframe, origin_bars)
+            await bar_crud.create_bars(bar_lot, origin_bars)
         except Exception as e:
             logger.debug(e)
 
-    bars = await bar_crud.read_bars(instrument, timeframe, range)
+    bars = await bar_crud.get_bars(bar_lot, range)
 
-    return BarList(instrument=instrument, timeframe=timeframe, bars=bars)
+    return bars
 
 
-async def get_last_timestamp(instrument: Instrument, timeframe: Timeframe) -> int:
-    return await bar_crud.get_last_bar_timestamp(instrument, timeframe)
+async def get_latest_timestamp(bar_lot: BarLot) -> int:
+    return await Bar.objects.filter(bar_lot=bar_lot).max('t')
 
 
 async def _get_bars_from_origin(
@@ -48,7 +45,6 @@ async def _get_bars_from_origin(
 ) -> list[Bar]:
     from_dt = datetime.fromtimestamp(range.from_t, pytz.utc)
     to_dt = datetime.fromtimestamp(range.to_t, pytz.utc)
-
     bars = await ib_connector.get_historical_bars(instrument, timeframe, from_dt, to_dt)
 
     if bars:

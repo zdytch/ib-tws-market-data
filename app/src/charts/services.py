@@ -1,18 +1,33 @@
 from .schemas import History, Info, Config
-from bars.models import Bar, Timeframe
+from bars.models import BarLot, Range
 from bars import services as bar_services
 from instruments.models import Exchange, InstrumentType
 from instruments import services as instrument_services
 
 
 async def get_history(ticker: str, timeframe: str, from_t: int, to_t: int) -> History:
+    history = History()
     exchange, symbol = _split_ticker(ticker)
-    instrument = await instrument_services.get_instrument(
-        symbol=symbol, exchange=exchange
+    bar_lot = await BarLot.objects.get(
+        instrument__symbol=symbol, instrument__exchange=exchange, timeframe=timeframe
     )
-    bars = await bar_services.get_bars(instrument, Timeframe(timeframe), from_t, to_t)
+    bars = await bar_services.get_bars(bar_lot, Range(from_t=from_t, to_t=to_t))
 
-    return await _bar_list_to_history(bars)
+    for bar in bars:
+        history.o.append(bar.o)
+        history.h.append(bar.h)
+        history.l.append(bar.l)
+        history.c.append(bar.c)
+        history.v.append(bar.v)
+        history.t.append(bar.t)
+
+    if bars:
+        history.s = 'ok'
+    else:
+        latest_t = await bar_services.get_latest_timestamp(bar_lot)
+        history.nextTime = latest_t
+
+    return history
 
 
 async def get_info(ticker: str) -> Info:
@@ -57,29 +72,6 @@ def _split_ticker(ticker: str) -> tuple[Exchange, str]:
     exchange = Exchange(exchange)
 
     return (exchange, symbol)
-
-
-async def _bar_list_to_history(bars: list[Bar]) -> History:
-    history = History()
-
-    for bar in bars:
-        history.o.append(bar.o)
-        history.h.append(bar.h)
-        history.l.append(bar.l)
-        history.c.append(bar.c)
-        history.v.append(bar.v)
-        history.t.append(bar.t)
-
-    if bars:
-        history.s = 'ok'
-    else:
-        pass
-        # last_ts = await bar_services.get_last_timestamp(
-        #     bar_list.instrument, bar_list.timeframe
-        # )
-        # history.nextTime = last_ts
-
-    return history
 
 
 def _instrument_type_to_chart(type: InstrumentType) -> str:
