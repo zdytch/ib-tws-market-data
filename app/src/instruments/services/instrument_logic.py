@@ -1,21 +1,21 @@
-from instruments.schemas import Instrument, Exchange
+from instruments.models import Instrument, Exchange
+from ormar import NoMatch
 from ib.connector import ib_connector
 from time import time
-from . import crud
 from loguru import logger
 
 
-async def get_instrument(ticker: str) -> Instrument:
+async def get_or_create_instrument(ticker: str) -> Instrument:
     exchange, symbol = tuple(ticker.split(':'))
     exchange = Exchange(exchange)
 
     try:
-        instrument = await crud.read_instrument(symbol, exchange)
-    except:
+        instrument = await Instrument.objects.get(symbol=symbol, exchange=exchange)
+
+    except NoMatch:
         try:
             instrument = await _get_instrument_from_origin(symbol, exchange)
-            await crud.create_instrument(instrument)
-
+            await instrument.save()
         except Exception as e:
             logger.debug(e)
 

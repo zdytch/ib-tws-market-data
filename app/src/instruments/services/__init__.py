@@ -1,1 +1,1 @@
-from .logic import *
+from .instrument_logic import *
