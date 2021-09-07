@@ -1,10 +1,9 @@
-from schemas import Range
-from bars.schemas import Bar, BarList, Timeframe
+from .schemas import Bar, BarList, Timeframe, Range
 from instruments.schemas import Instrument
+import cache
 from ib.connector import ib_connector
 from datetime import datetime
 import pytz
-import cache
 from loguru import logger
 
 
