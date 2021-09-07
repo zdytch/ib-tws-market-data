@@ -4,7 +4,6 @@ from bars.schemas import BarList, Timeframe
 from bars import services as bar_services
 from instruments.schemas import Exchange, InstrumentType
 from instruments import services as instrument_services
-from .. import cache
 
 
 async def get_history(ticker: str, timeframe: str, from_t: int, to_t: int) -> ChartData:
@@ -52,10 +51,10 @@ def get_config() -> dict:
     }
 
 
-async def _bar_list_to_chart_data(data: BarList) -> ChartData:
+async def _bar_list_to_chart_data(bar_list: BarList) -> ChartData:
     chart_data = ChartData()
 
-    for bar in data.bars:
+    for bar in bar_list.bars:
         chart_data.o.append(bar.o)
         chart_data.h.append(bar.h)
         chart_data.l.append(bar.l)
@@ -63,10 +62,12 @@ async def _bar_list_to_chart_data(data: BarList) -> ChartData:
         chart_data.v.append(bar.v)
         chart_data.t.append(bar.t)
 
-    if data.bars:
+    if bar_list.bars:
         chart_data.s = 'ok'
     else:
-        last_ts = await cache.get_last_timestamp(data.instrument, data.timeframe)
+        last_ts = await bar_services.get_last_timestamp(
+            bar_list.instrument, bar_list.timeframe
+        )
         chart_data.next_time = last_ts
 
     return chart_data

@@ -1,6 +1,6 @@
-from .schemas import Bar, BarList, Timeframe, Range
+from bars.schemas import Bar, BarList, Timeframe, Range
+from . import bar_crud, range_crud
 from instruments.schemas import Instrument
-import cache
 from ib.connector import ib_connector
 from datetime import datetime
 import pytz
@@ -12,7 +12,7 @@ async def get_bar_list(
 ) -> BarList:
     range = Range(from_t=from_t, to_t=to_t)
 
-    cache_ranges = await cache.get_ranges(instrument, timeframe)
+    cache_ranges = await range_crud.read_range_list(instrument, timeframe)
     missing_ranges = _calculate_missing_ranges(range, cache_ranges)
 
     for missing_range in missing_ranges:
@@ -30,13 +30,17 @@ async def get_bar_list(
             origin_bars = await _get_bars_from_origin(
                 instrument, timeframe, missing_range
             )
-            await cache.save_bars(instrument, timeframe, origin_bars)
+            await bar_crud.create_bars(instrument, timeframe, origin_bars)
         except Exception as e:
             logger.debug(e)
 
-    bars = await cache.get_bars(instrument, timeframe, range)
+    bars = await bar_crud.read_bars(instrument, timeframe, range)
 
     return BarList(instrument=instrument, timeframe=timeframe, bars=bars)
+
+
+async def get_last_timestamp(instrument: Instrument, timeframe: Timeframe) -> int:
+    return await bar_crud.get_last_bar_timestamp(instrument, timeframe)
 
 
 async def _get_bars_from_origin(
