@@ -1,5 +1,4 @@
 from .schemas import History, Info, Config
-from decimal import Decimal
 from bars.schemas import BarList, Timeframe
 from bars import services as bar_services
 from instruments.schemas import Exchange, InstrumentType
@@ -19,9 +18,7 @@ async def get_info(ticker: str) -> Info:
     instrument = await instrument_services.get_instrument(ticker)
     instrument_type = _instrument_type_to_chart(instrument.type)
     timezone, session = _exchange_schedule_to_chart(instrument.exchange)
-    price_scale = 10 ** abs(
-        Decimal(str(instrument.tick_size)).normalize().as_tuple().exponent
-    )
+    price_scale = 10 ** abs(instrument.tick_size.normalize().as_tuple().exponent)
     min_movement = int(instrument.tick_size * price_scale)
 
     return Info(

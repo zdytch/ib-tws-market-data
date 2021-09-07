@@ -1,12 +1,13 @@
 from pydantic import BaseModel, Field
+from decimal import Decimal
 from typing import Optional
 
 
 class History(BaseModel):
-    o: list[float] = []
-    h: list[float] = []
-    l: list[float] = []
-    c: list[float] = []
+    o: list[Decimal] = []
+    h: list[Decimal] = []
+    l: list[Decimal] = []
+    c: list[Decimal] = []
     v: list[int] = []
     t: list[int] = []
     s: str = 'no_data'
