@@ -1,7 +1,7 @@
 from instruments.schemas import Instrument, Exchange
 from ib.connector import ib_connector
 from time import time
-from .. import cache
+from . import crud
 from loguru import logger
 
 
@@ -10,11 +10,11 @@ async def get_instrument(ticker: str) -> Instrument:
     exchange = Exchange(exchange)
 
     try:
-        instrument = await cache.get_instrument(symbol, exchange)
+        instrument = await crud.read_instrument(symbol, exchange)
     except:
         try:
             instrument = await _get_instrument_from_origin(symbol, exchange)
-            await cache.save_instrument(instrument)
+            await crud.create_instrument(instrument)
 
         except Exception as e:
             logger.debug(e)

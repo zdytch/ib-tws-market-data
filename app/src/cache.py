@@ -6,32 +6,6 @@ from pymongo.errors import BulkWriteError
 from loguru import logger
 
 
-async def get_instrument(symbol: str, exchange: Exchange) -> Instrument:
-    collection = database.instruments
-    instrument_dict = await collection.find_one(
-        {'symbol': symbol, 'exchange': exchange}
-    )
-
-    return Instrument(**instrument_dict)
-
-
-async def save_instrument(instrument: Instrument) -> None:
-    collection = database.instruments
-    collection.create_index('symbol', 'exchange', unique=True)
-
-    await collection.insert_one(instrument.dict())
-
-
-async def update_instrument(instrument: Instrument, fields: dict) -> Instrument:
-    collection = database.instruments
-    instrument_dict = await collection.update_one(
-        {'symbol': instrument.symbol, 'exchange': instrument.exchange},
-        {'$set': fields},
-    )
-
-    return Instrument(**instrument_dict)
-
-
 async def get_bars(
     instrument: Instrument, timeframe: Timeframe, range: Range
 ) -> list[Bar]:
