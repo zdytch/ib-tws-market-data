@@ -1,6 +1,8 @@
 fastapi
 uvicorn
-motor
+ormar
+asyncpg
+psycopg2-binary
 ib_insync
 loguru
 pytz
