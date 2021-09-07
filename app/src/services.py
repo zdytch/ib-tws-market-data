@@ -1,23 +1,16 @@
-from schemas import (
-    Timeframe,
-    Bar,
-    Range,
-    Instrument,
-    BarList,
-)
-from instruments.schemas import Exchange
+from schemas import Range
+from bars.schemas import Bar, BarList, Timeframe
+from instruments.schemas import Instrument
 from ib.connector import ib_connector
 from datetime import datetime
-from decimal import Decimal
 import pytz
 import cache
 from loguru import logger
 
 
 async def get_bar_list(
-    ticker: str, timeframe: Timeframe, from_t: int, to_t: int
+    instrument: Instrument, timeframe: Timeframe, from_t: int, to_t: int
 ) -> BarList:
-    instrument = await get_instrument(ticker)
     range = Range(from_t=from_t, to_t=to_t)
 
     cache_ranges = await cache.get_ranges(instrument, timeframe)

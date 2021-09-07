@@ -1,6 +1,6 @@
 from ib_insync import IB, Contract, Stock, ContFuture
-from instruments.schemas import Exchange, InstrumentType
-from schemas import Timeframe, Bar, Instrument
+from instruments.schemas import Instrument, Exchange, InstrumentType
+from bars.schemas import Bar, Timeframe
 from datetime import datetime
 from . import utils
 from loguru import logger

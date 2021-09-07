@@ -1,15 +1,16 @@
 from .schemas import ChartData
 from decimal import Decimal
+from bars.schemas import BarList, Timeframe
 from instruments.schemas import Exchange, InstrumentType
 from instruments import services as instrument_services
 from .. import services as root_services
 from .. import cache
-from ..schemas import BarList, Timeframe
 
 
 async def get_history(ticker: str, timeframe: str, from_t: int, to_t: int) -> ChartData:
+    instrument = await instrument_services.get_instrument(ticker)
     bar_list = await root_services.get_bar_list(
-        ticker, Timeframe(timeframe), from_t, to_t
+        instrument, Timeframe(timeframe), from_t, to_t
     )
 
     return await _bar_list_to_chart_data(bar_list)

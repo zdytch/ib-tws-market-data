@@ -1,7 +1,7 @@
 from typing import Union
 from ib_insync import BarData
 from instruments.schemas import Exchange, InstrumentType, TradingSession
-from schemas import Bar, Timeframe
+from bars.schemas import Bar, Timeframe
 from datetime import datetime, date, time
 import math
 import pytz
