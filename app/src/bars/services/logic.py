@@ -12,18 +12,18 @@ async def get_bar_list(
 ) -> BarList:
     range = Range(from_t=from_t, to_t=to_t)
 
-    cache_ranges = await range_crud.read_range_list(instrument, timeframe)
-    missing_ranges = _calculate_missing_ranges(range, cache_ranges)
+    existing_ranges = await range_crud.read_range_list(instrument, timeframe)
+    missing_ranges = _calculate_missing_ranges(range, existing_ranges)
 
     for missing_range in missing_ranges:
         # If missing range doesn't overlap with open session range
         if not _is_overlap_open_session_range(instrument, missing_range):
-            # Extend missing range by 1 day to overlap possible gaps in cache
+            # Extend missing range by 1 day to overlap possible gaps in db
             missing_range.from_t -= 86400
             missing_range.to_t += 86400
 
         logger.debug(
-            f'Missing bars in cache. Retreiving from origin... Instrument: {instrument}. Range: {missing_range}'
+            f'Missing bars in range. Retreiving from origin... Instrument: {instrument}. Range: {missing_range}'
         )
 
         try:
