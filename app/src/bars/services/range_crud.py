@@ -14,7 +14,7 @@ async def create_range(
     await _perform_defragmentation(collection)
 
 
-async def read_range_list(instrument: Instrument, timeframe: Timeframe) -> list[Range]:
+async def read_ranges(instrument: Instrument, timeframe: Timeframe) -> list[Range]:
     collection = _get_collection(instrument, timeframe)
 
     return [Range(**dic) for dic in await collection.find().to_list(999)]

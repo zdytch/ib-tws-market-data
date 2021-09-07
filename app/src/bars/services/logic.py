@@ -12,7 +12,7 @@ async def get_bar_list(
 ) -> BarList:
     range = Range(from_t=from_t, to_t=to_t)
 
-    existing_ranges = await range_crud.read_range_list(instrument, timeframe)
+    existing_ranges = await range_crud.read_ranges(instrument, timeframe)
     missing_ranges = _calculate_missing_ranges(range, existing_ranges)
 
     for missing_range in missing_ranges:
