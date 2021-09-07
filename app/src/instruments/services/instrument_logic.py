@@ -20,11 +20,11 @@ async def get_instrument(symbol: str, exchange: Exchange) -> Instrument:
 
 
 async def get_session(instrument: Instrument) -> Session:
-    session = await Session.objects.get_or_create(instrument)
+    session = await Session.objects.get_or_create(instrument=instrument)
 
     if not _is_session_up_to_date(session):
         session = await _get_session_from_origin(instrument)
-        await session.update()
+        await session.upsert()
 
     return session
 
