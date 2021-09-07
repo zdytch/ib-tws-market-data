@@ -2,6 +2,7 @@ from ib_insync import IB, Contract, Stock, ContFuture
 from instruments.schemas import Instrument, Exchange, InstrumentType
 from bars.schemas import Bar, Timeframe
 from datetime import datetime
+from decimal import Decimal
 from . import utils
 from loguru import logger
 
@@ -23,8 +24,8 @@ class IBConnector:
         is_stock = type == InstrumentType.STOCK
         details = await self._ib.reqContractDetailsAsync(contract)
         description = details[0].longName
-        tick_size = 0.01 if is_stock else details[0].minTick
-        multiplier = 1.0 if is_stock else contract.multiplier
+        tick_size = Decimal('0.01') if is_stock else Decimal(str(details[0].minTick))
+        multiplier = Decimal('1.00') if is_stock else Decimal(str(contract.multiplier))
         trading_hours = details[0].liquidHours if is_stock else details[0].tradingHours
         nearest_session = utils.get_nearest_trading_session(
             trading_hours, details[0].timeZoneId
