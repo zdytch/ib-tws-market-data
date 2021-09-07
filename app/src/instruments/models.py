@@ -35,13 +35,6 @@ class Instrument(ormar.Model):
         constraints = [ormar.UniqueColumns('symbol', 'exchange')]
         orders_by = ['symbol']
 
-    def __str__(self):
-        return (
-            f'symbol={self.symbol} exchange={self.exchange} type={self.type} '
-            f'description={self.description} tick_size={self.tick_size} multiplier={self.multiplier} '
-            f'nearest_session={self.nearest_session}'
-        )
-
 
 class Session(ormar.Model):
     id: int = ormar.Integer(primary_key=True)  # type: ignore
