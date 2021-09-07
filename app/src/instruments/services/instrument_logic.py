@@ -5,10 +5,7 @@ from time import time
 from loguru import logger
 
 
-async def get_or_create_instrument(ticker: str) -> Instrument:
-    exchange, symbol = tuple(ticker.split(':'))
-    exchange = Exchange(exchange)
-
+async def get_instrument(symbol: str, exchange: Exchange) -> Instrument:
     try:
         instrument = await Instrument.objects.get(symbol=symbol, exchange=exchange)
 
