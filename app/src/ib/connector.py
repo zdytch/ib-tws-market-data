@@ -46,7 +46,12 @@ class IBConnector:
         details = await self._ib.reqContractDetailsAsync(contract)
         trading_hours = details[0].liquidHours if is_stock else details[0].tradingHours
 
-        return utils.get_nearest_trading_session(trading_hours, details[0].timeZoneId)
+        session = utils.get_nearest_trading_session(
+            trading_hours, details[0].timeZoneId
+        )
+        session.instrument = instrument
+
+        return session
 
     async def get_historical_bars(
         self,
