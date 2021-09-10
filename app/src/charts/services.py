@@ -11,8 +11,8 @@ async def get_history(ticker: str, timeframe: str, from_t: int, to_t: int) -> Hi
     instrument = await instrument_services.get_instrument(
         symbol=symbol, exchange=exchange
     )
-    bar_lot = await bar_services.get_bar_lot(instrument, Timeframe(timeframe))
-    bars = await bar_services.get_bars(bar_lot, Range(from_t=from_t, to_t=to_t))
+    bar_set = await bar_services.get_bar_set(instrument, Timeframe(timeframe))
+    bars = await bar_services.get_bars(bar_set, Range(from_t=from_t, to_t=to_t))
 
     for bar in bars:
         history.o.append(bar.o)
@@ -25,7 +25,7 @@ async def get_history(ticker: str, timeframe: str, from_t: int, to_t: int) -> Hi
     if bars:
         history.s = 'ok'
     else:
-        latest_t = await bar_services.get_latest_timestamp(bar_lot)
+        latest_t = await bar_services.get_latest_timestamp(bar_set)
         history.nextTime = latest_t
 
     return history

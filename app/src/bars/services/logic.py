@@ -1,4 +1,4 @@
-from bars.models import BarLot, Bar, Range, Timeframe
+from bars.models import BarSet, Bar, Range, Timeframe
 from instruments.models import Instrument
 from instruments import services as instrument_services
 from . import crud
@@ -8,16 +8,16 @@ import pytz
 from loguru import logger
 
 
-async def get_bar_lot(instrument: Instrument, timeframe: Timeframe) -> BarLot:
-    return await BarLot.objects.select_related('instrument').get_or_create(
+async def get_bar_set(instrument: Instrument, timeframe: Timeframe) -> BarSet:
+    return await BarSet.objects.select_related('instrument').get_or_create(
         instrument=instrument, timeframe=timeframe
     )
 
 
-async def get_bars(bar_lot: BarLot, range: Range) -> list[Bar]:
-    existing_ranges = await Range.objects.filter(bar_lot=bar_lot).all()
+async def get_bars(bar_set: BarSet, range: Range) -> list[Bar]:
+    existing_ranges = await Range.objects.filter(bar_set=bar_set).all()
     missing_ranges = _calculate_missing_ranges(range, existing_ranges)
-    instrument = bar_lot.instrument
+    instrument = bar_set.instrument
 
     for missing_range in missing_ranges:
         # If missing range doesn't overlap with open session range
@@ -34,21 +34,21 @@ async def get_bars(bar_lot: BarLot, range: Range) -> list[Bar]:
 
         try:
             origin_bars = await _get_bars_from_origin(
-                instrument, bar_lot.timeframe, missing_range
+                instrument, bar_set.timeframe, missing_range
             )
-            await crud.create_bars(bar_lot, origin_bars)
+            await crud.create_bars(bar_set, origin_bars)
 
             logger.debug(f'Bars created. Instrument: {instrument}. Range: {range}')
         except Exception as e:
             logger.debug(e)
 
-    bars = await crud.get_bars(bar_lot, range)
+    bars = await crud.get_bars(bar_set, range)
 
     return bars
 
 
-async def get_latest_timestamp(bar_lot: BarLot) -> int:
-    return await Bar.objects.filter(bar_lot=bar_lot).max('t') or 0
+async def get_latest_timestamp(bar_set: BarSet) -> int:
+    return await Bar.objects.filter(bar_set=bar_set).max('t') or 0
 
 
 async def _get_bars_from_origin(
