@@ -4,6 +4,9 @@ from asyncpg.exceptions import UniqueViolationError
 
 async def create_bars(bar_lot: BarLot, bars: list[Bar]) -> None:
     if bars:
+        for bar in bars:
+            bar.bar_lot = bar_lot
+
         try:
             await Bar.objects.bulk_create(bars)
         except UniqueViolationError:
