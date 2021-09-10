@@ -23,8 +23,10 @@ async def get_session(instrument: Instrument) -> Session:
     session = await Session.objects.get_or_create(instrument=instrument)
 
     if not _is_session_up_to_date(session):
-        session = await _get_session_from_origin(instrument)
-        await session.upsert()
+        session.open_t, session.close_t = await _get_trading_hours_from_origin(
+            instrument
+        )
+        await session.update(['open_t', 'close_t'])
 
     return session
 
@@ -49,12 +51,12 @@ async def _get_instrument_from_origin(symbol: str, exchange: Exchange) -> Instru
     return instrument
 
 
-async def _get_session_from_origin(instrument: Instrument) -> Session:
-    session = await ib_connector.get_nearest_trading_session(instrument)
+async def _get_trading_hours_from_origin(instrument: Instrument) -> tuple[int, int]:
+    trading_hours = await ib_connector.get_nearest_trading_hours(instrument)
 
-    logger.debug(f'Received session from origin: {session}')
+    logger.debug(f'Received trading hours from origin: {trading_hours}')
 
-    return session
+    return trading_hours
 
 
 def _is_session_open(instrument: Instrument) -> bool:

@@ -1,6 +1,6 @@
 from typing import Union
 from ib_insync import BarData
-from instruments.models import Exchange, InstrumentType, Session
+from instruments.models import Exchange, InstrumentType
 from bars.models import Bar, Timeframe
 from datetime import datetime, date, time
 from decimal import Decimal, ROUND_HALF_UP
@@ -73,25 +73,23 @@ def get_instrument_type_by_exchange(exchange: Exchange) -> InstrumentType:
     return instrument_type
 
 
-def get_nearest_trading_session(trading_hours: str, tz_id: str) -> Session:
-    session = None
+def get_nearest_trading_hours(trading_hours: str, tz_id: str) -> tuple[int, int]:
+    nearest_trading_hours = (0, 0)
     session_tz = pytz.timezone(tz_id)
     for ib_session in trading_hours.split(';'):
         if not 'CLOSED' in ib_session:
             ib_open, ib_close = tuple(ib_session.split('-'))
             open = session_tz.localize(datetime.strptime(ib_open, '%Y%m%d:%H%M'))
             close = session_tz.localize(datetime.strptime(ib_close, '%Y%m%d:%H%M'))
-            session = Session(
-                open_t=int(open.timestamp()), close_t=int(close.timestamp())
-            )
+            nearest_trading_hours = (int(open.timestamp()), int(close.timestamp()))
             break
 
-    if not session:
+    if not nearest_trading_hours:
         raise ValueError(
-            f'Cannot get nearest trading session from trading hours {trading_hours}'
+            f'Cannot get nearest trading hours from trading hours {trading_hours}'
         )
 
-    return session
+    return nearest_trading_hours
 
 
 def _round_with_quantum(number: Decimal, quantum: Decimal) -> Decimal:

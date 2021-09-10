@@ -1,5 +1,5 @@
 from ib_insync import IB, Contract, Stock, ContFuture
-from instruments.models import Instrument, Exchange, InstrumentType, Session
+from instruments.models import Instrument, Exchange, InstrumentType
 from bars.models import Bar, BarSet, Range
 from datetime import datetime
 from decimal import Decimal
@@ -37,7 +37,9 @@ class IBConnector:
             multiplier=multiplier,
         )
 
-    async def get_nearest_trading_session(self, instrument: Instrument) -> Session:
+    async def get_nearest_trading_hours(
+        self, instrument: Instrument
+    ) -> tuple[int, int]:
         await self._connect()
 
         contract = await self._get_contract(instrument.symbol, instrument.exchange)
@@ -45,13 +47,11 @@ class IBConnector:
         is_stock = type == InstrumentType.STOCK
         details = await self._ib.reqContractDetailsAsync(contract)
         trading_hours = details[0].liquidHours if is_stock else details[0].tradingHours
-
-        session = utils.get_nearest_trading_session(
+        nearest_trading_hours = utils.get_nearest_trading_hours(
             trading_hours, details[0].timeZoneId
         )
-        session.instrument = instrument
 
-        return session
+        return nearest_trading_hours
 
     async def get_historical_bars(
         self,
