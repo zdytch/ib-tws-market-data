@@ -36,9 +36,10 @@ class Bar(ormar.Model):
     l: Decimal = ormar.Decimal(max_digits=18, decimal_places=8)  # type: ignore
     c: Decimal = ormar.Decimal(max_digits=18, decimal_places=8)  # type: ignore
     v: int = ormar.Integer(minimum=0, default=0)  # type: ignore
-    t: int = ormar.Integer(minimum=0, default=0, unique=True)  # type: ignore
+    t: int = ormar.Integer(minimum=0, default=0)  # type: ignore
 
     class Meta(BaseMeta):
+        constraints = [ormar.UniqueColumns('bar_set', 't')]
         orders_by = ['t']
 
     def __str__(self):
