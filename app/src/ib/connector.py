@@ -77,6 +77,7 @@ class IBConnector:
         for ib_bar in ib_bars:
             bar = utils.bar_from_ib(ib_bar, instrument.tick_size, volume_multiplier)
             if int(from_dt.timestamp()) <= bar.t <= int(to_dt.timestamp()):
+                bar.bar_set = bar_set
                 bars.append(bar)
 
         return bars
