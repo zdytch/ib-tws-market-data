@@ -1,9 +1,10 @@
 from ib_insync import IB, Contract, Stock, ContFuture
 from instruments.models import Instrument, Exchange, InstrumentType, Session
-from bars.models import Bar, Timeframe
+from bars.models import Bar, BarSet, Range
 from datetime import datetime
 from decimal import Decimal
 from . import utils
+import pytz
 from loguru import logger
 
 
@@ -49,16 +50,17 @@ class IBConnector:
 
     async def get_historical_bars(
         self,
-        instrument: Instrument,
-        timeframe: Timeframe,
-        from_dt: datetime,
-        to_dt: datetime,
+        bar_set: BarSet,
+        range: Range,
     ) -> list[Bar]:
         await self._connect()
 
+        instrument = bar_set.instrument
         contract = await self._get_contract(instrument.symbol, instrument.exchange)
         is_stock = instrument.type == InstrumentType.STOCK
         volume_multiplier = 100 if is_stock else 1
+        from_dt = datetime.fromtimestamp(range.from_t, pytz.utc)
+        to_dt = datetime.fromtimestamp(range.to_t, pytz.utc)
 
         ib_bars = await self._ib.reqHistoricalDataAsync(
             contract=contract,

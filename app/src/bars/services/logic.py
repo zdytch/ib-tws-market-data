@@ -3,8 +3,6 @@ from instruments.models import Instrument
 from instruments import services as instrument_services
 from . import crud
 from ib.connector import ib_connector
-from datetime import datetime
-import pytz
 from loguru import logger
 
 
@@ -33,9 +31,7 @@ async def get_bars(bar_set: BarSet, range: Range) -> list[Bar]:
         )
 
         try:
-            origin_bars = await _get_bars_from_origin(
-                instrument, bar_set.timeframe, missing_range
-            )
+            origin_bars = await _get_bars_from_origin(bar_set, missing_range)
             await crud.add_bars(bar_set, origin_bars)
 
             logger.debug(f'Bars created. Instrument: {instrument}. Range: {range}')
@@ -51,12 +47,9 @@ async def get_latest_timestamp(bar_set: BarSet) -> int:
     return await Bar.objects.filter(bar_set=bar_set).max('t') or 0
 
 
-async def _get_bars_from_origin(
-    instrument: Instrument, timeframe: Timeframe, range: Range
-) -> list[Bar]:
-    from_dt = datetime.fromtimestamp(range.from_t, pytz.utc)
-    to_dt = datetime.fromtimestamp(range.to_t, pytz.utc)
-    bars = await ib_connector.get_historical_bars(instrument, timeframe, from_dt, to_dt)
+async def _get_bars_from_origin(bar_set: BarSet, range: Range) -> list[Bar]:
+    bars = await ib_connector.get_historical_bars(bar_set, range)
+    instrument = bar_set.instrument
 
     if bars:
         logger.debug(
