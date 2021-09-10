@@ -1,21 +1,41 @@
 from .schemas import History, Info, Config
-from bars.schemas import BarList, Timeframe
+from bars.models import Range, Timeframe
 from bars import services as bar_services
-from instruments.schemas import Exchange, InstrumentType
+from instruments.models import Exchange, InstrumentType
 from instruments import services as instrument_services
 
 
 async def get_history(ticker: str, timeframe: str, from_t: int, to_t: int) -> History:
-    instrument = await instrument_services.get_instrument(ticker)
-    bar_list = await bar_services.get_bar_list(
-        instrument, Timeframe(timeframe), from_t, to_t
+    history = History()
+    exchange, symbol = _split_ticker(ticker)
+    instrument = await instrument_services.get_instrument(
+        symbol=symbol, exchange=exchange
     )
+    bar_set = await bar_services.get_bar_set(instrument, Timeframe(timeframe))
+    bars = await bar_services.get_bars(bar_set, Range(from_t=from_t, to_t=to_t))
 
-    return await _bar_list_to_history(bar_list)
+    for bar in bars:
+        history.o.append(bar.o)
+        history.h.append(bar.h)
+        history.l.append(bar.l)
+        history.c.append(bar.c)
+        history.v.append(bar.v)
+        history.t.append(bar.t)
+
+    if bars:
+        history.s = 'ok'
+    else:
+        latest_t = await bar_services.get_latest_timestamp(bar_set)
+        history.nextTime = latest_t
+
+    return history
 
 
 async def get_info(ticker: str) -> Info:
-    instrument = await instrument_services.get_instrument(ticker)
+    exchange, symbol = _split_ticker(ticker)
+    instrument = await instrument_services.get_instrument(
+        symbol=symbol, exchange=exchange
+    )
     instrument_type = _instrument_type_to_chart(instrument.type)
     timezone, session = _exchange_schedule_to_chart(instrument.exchange)
     price_scale = 10 ** abs(instrument.tick_size.normalize().as_tuple().exponent)
@@ -48,26 +68,11 @@ def get_config() -> Config:
     )
 
 
-async def _bar_list_to_history(bar_list: BarList) -> History:
-    history = History()
+def _split_ticker(ticker: str) -> tuple[Exchange, str]:
+    exchange, symbol = tuple(ticker.split(':'))
+    exchange = Exchange(exchange)
 
-    for bar in bar_list.bars:
-        history.o.append(bar.o)
-        history.h.append(bar.h)
-        history.l.append(bar.l)
-        history.c.append(bar.c)
-        history.v.append(bar.v)
-        history.t.append(bar.t)
-
-    if bar_list.bars:
-        history.s = 'ok'
-    else:
-        last_ts = await bar_services.get_last_timestamp(
-            bar_list.instrument, bar_list.timeframe
-        )
-        history.nextTime = last_ts
-
-    return history
+    return (exchange, symbol)
 
 
 def _instrument_type_to_chart(type: InstrumentType) -> str:
