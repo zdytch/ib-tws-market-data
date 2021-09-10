@@ -66,7 +66,7 @@ class IBConnector:
             contract=contract,
             endDateTime=to_dt,
             durationStr=utils.duration_to_ib(from_dt, to_dt),
-            barSizeSetting=utils.timeframe_to_ib(timeframe),
+            barSizeSetting=utils.timeframe_to_ib(bar_set.timeframe),
             whatToShow='TRADES',
             useRTH=is_stock,
             formatDate=2,
