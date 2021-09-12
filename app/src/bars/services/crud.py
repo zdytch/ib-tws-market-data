@@ -1,12 +1,10 @@
-from bars.models import BarSet, Bar, Range, Timeframe
+from bars.models import BarSet, Bar, BarRange, Timeframe
+from common.schemas import Range
 from asyncpg.exceptions import UniqueViolationError
 
 
-async def create_bars(bar_set: BarSet, bars: list[Bar]) -> None:
+async def add_bars(bar_set: BarSet, bars: list[Bar]) -> None:
     if bars:
-        for bar in bars:
-            bar.bar_set = bar_set
-
         try:
             await Bar.objects.bulk_create(bars)
         except UniqueViolationError:
@@ -15,7 +13,7 @@ async def create_bars(bar_set: BarSet, bars: list[Bar]) -> None:
         min_t = min(bars, key=lambda bar: bar.t).t
         max_t = max(bars, key=lambda bar: bar.t).t
 
-        await Range.objects.create(bar_set=bar_set, from_t=min_t, to_t=max_t)
+        await BarRange.objects.create(bar_set=bar_set, from_t=min_t, to_t=max_t)
 
         await _perform_range_defragmentation(bar_set)
 
@@ -27,7 +25,7 @@ async def get_bars(bar_set: BarSet, range: Range) -> list[Bar]:
 
 
 async def _perform_range_defragmentation(bar_set: BarSet) -> None:
-    ranges = await Range.objects.filter(bar_set=bar_set).all()
+    ranges = await BarRange.objects.filter(bar_set=bar_set).all()
     step_size = _get_step_size(bar_set.timeframe)
 
     is_updated = False
@@ -55,7 +53,7 @@ async def _perform_range_defragmentation(bar_set: BarSet) -> None:
                 is_updated = True
 
     if is_updated:
-        async with Range.Meta.database.transaction():
+        async with BarRange.Meta.database.transaction():
             for range in ranges:
                 if range.from_t and range.to_t:
                     await range.update(['from_t', 'to_t'])

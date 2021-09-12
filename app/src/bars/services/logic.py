@@ -1,10 +1,9 @@
-from bars.models import BarSet, Bar, Range, Timeframe
+from bars.models import BarSet, Bar, BarRange, Timeframe
 from instruments.models import Instrument
 from instruments import services as instrument_services
+from common.schemas import Range
 from . import crud
 from ib.connector import ib_connector
-from datetime import datetime
-import pytz
 from loguru import logger
 
 
@@ -15,7 +14,7 @@ async def get_bar_set(instrument: Instrument, timeframe: Timeframe) -> BarSet:
 
 
 async def get_bars(bar_set: BarSet, range: Range) -> list[Bar]:
-    existing_ranges = await Range.objects.filter(bar_set=bar_set).all()
+    existing_ranges = await BarRange.objects.filter(bar_set=bar_set).all()
     missing_ranges = _calculate_missing_ranges(range, existing_ranges)
     instrument = bar_set.instrument
 
@@ -33,10 +32,8 @@ async def get_bars(bar_set: BarSet, range: Range) -> list[Bar]:
         )
 
         try:
-            origin_bars = await _get_bars_from_origin(
-                instrument, bar_set.timeframe, missing_range
-            )
-            await crud.create_bars(bar_set, origin_bars)
+            origin_bars = await _get_bars_from_origin(bar_set, missing_range)
+            await crud.add_bars(bar_set, origin_bars)
 
             logger.debug(f'Bars created. Instrument: {instrument}. Range: {range}')
         except Exception as e:
@@ -51,12 +48,9 @@ async def get_latest_timestamp(bar_set: BarSet) -> int:
     return await Bar.objects.filter(bar_set=bar_set).max('t') or 0
 
 
-async def _get_bars_from_origin(
-    instrument: Instrument, timeframe: Timeframe, range: Range
-) -> list[Bar]:
-    from_dt = datetime.fromtimestamp(range.from_t, pytz.utc)
-    to_dt = datetime.fromtimestamp(range.to_t, pytz.utc)
-    bars = await ib_connector.get_historical_bars(instrument, timeframe, from_dt, to_dt)
+async def _get_bars_from_origin(bar_set: BarSet, range: Range) -> list[Bar]:
+    bars = await ib_connector.get_historical_bars(bar_set, range)
+    instrument = bar_set.instrument
 
     if bars:
         logger.debug(
@@ -69,7 +63,7 @@ async def _get_bars_from_origin(
 
 
 def _calculate_missing_ranges(
-    within_range: Range, existing_ranges: list[Range]
+    within_range: Range, existing_ranges: list[BarRange]
 ) -> list:
     missing_ranges = []
     next_from_t = within_range.from_t

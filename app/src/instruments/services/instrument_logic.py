@@ -1,4 +1,4 @@
-from instruments.models import Instrument, Exchange, Session
+from instruments.models import Instrument, Exchange, TradingSession
 from ormar import NoMatch
 from ib.connector import ib_connector
 from time import time
@@ -8,23 +8,30 @@ from loguru import logger
 async def get_instrument(symbol: str, exchange: Exchange) -> Instrument:
     try:
         instrument = await Instrument.objects.get(symbol=symbol, exchange=exchange)
-
     except NoMatch:
-        try:
-            instrument = await _get_instrument_from_origin(symbol, exchange)
-            await instrument.save()
-        except Exception as e:
-            logger.debug(e)
+        info = await ib_connector.get_instrument_info(symbol, exchange)
+        instrument = await Instrument.objects.create(
+            symbol=info.symbol,
+            exchange=info.exchange,
+            type=info.type,
+            description=info.description,
+            tick_size=info.tick_size,
+            multiplier=info.multiplier,
+        )
 
     return instrument
 
 
-async def get_session(instrument: Instrument) -> Session:
-    session = await Session.objects.get_or_create(instrument=instrument)
+async def get_session(instrument: Instrument) -> TradingSession:
+    session = await TradingSession.objects.get_or_create(instrument=instrument)
 
     if not _is_session_up_to_date(session):
-        session = await _get_session_from_origin(instrument)
-        await session.upsert()
+        info = await ib_connector.get_instrument_info(
+            instrument.symbol, instrument.exchange
+        )
+        session.open_t = info.trading_range.from_t
+        session.close_t = info.trading_range.to_t
+        await session.update(['open_t', 'close_t'])
 
     return session
 
@@ -41,22 +48,6 @@ async def is_overlap_open_session(
     )
 
 
-async def _get_instrument_from_origin(symbol: str, exchange: Exchange) -> Instrument:
-    instrument = await ib_connector.get_instrument(symbol, exchange)
-
-    logger.debug(f'Received instrument from origin: {instrument}')
-
-    return instrument
-
-
-async def _get_session_from_origin(instrument: Instrument) -> Session:
-    session = await ib_connector.get_nearest_trading_session(instrument)
-
-    logger.debug(f'Received session from origin: {session}')
-
-    return session
-
-
 def _is_session_open(instrument: Instrument) -> bool:
     return (
         instrument.nearest_session.open_t
@@ -65,5 +56,5 @@ def _is_session_open(instrument: Instrument) -> bool:
     )
 
 
-def _is_session_up_to_date(session: Session) -> bool:
+def _is_session_up_to_date(session: TradingSession) -> bool:
     return session.close_t > int(time())

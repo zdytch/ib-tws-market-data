@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from decimal import Decimal
+from typing import Optional
 
 
 class History(BaseModel):
@@ -10,23 +11,23 @@ class History(BaseModel):
     v: list[int] = []
     t: list[int] = []
     s: str = 'no_data'
-    nextTime: int = 0
+    nextTime: Optional[int]
 
 
 class Info(BaseModel):
     name: str
     ticker: str
-    type: str
-    description: str
-    exchange: str
-    listed_exchange: str
-    session: str
-    timezone: str
-    currency_code: str
-    has_daily: str
-    has_intraday: str
-    minmov: int
-    pricescale: int
+    type: str = ''
+    description: str = ''
+    exchange: str = ''
+    listed_exchange: str = ''
+    session: str = '24x7'
+    timezone: str = ''
+    currency_code: str = 'USD'
+    has_daily: bool = True
+    has_intraday: bool = True
+    minmov: int = 0
+    pricescale: int = 0
 
 
 class Config(BaseModel):
