@@ -1,4 +1,4 @@
-from instruments.models import Instrument, Exchange, Session
+from instruments.models import Instrument, Exchange, TradingSession
 from common.schemas import Range
 from ormar import NoMatch
 from ib.connector import ib_connector
@@ -20,8 +20,8 @@ async def get_instrument(symbol: str, exchange: Exchange) -> Instrument:
     return instrument
 
 
-async def get_session(instrument: Instrument) -> Session:
-    session = await Session.objects.get_or_create(instrument=instrument)
+async def get_session(instrument: Instrument) -> TradingSession:
+    session = await TradingSession.objects.get_or_create(instrument=instrument)
 
     if not _is_session_up_to_date(session):
         trading_hours = await _get_trading_hours_from_origin(instrument)
@@ -68,5 +68,5 @@ def _is_session_open(instrument: Instrument) -> bool:
     )
 
 
-def _is_session_up_to_date(session: Session) -> bool:
+def _is_session_up_to_date(session: TradingSession) -> bool:
     return session.close_t > int(time())

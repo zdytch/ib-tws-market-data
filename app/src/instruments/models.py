@@ -36,7 +36,7 @@ class Instrument(ormar.Model):
         orders_by = ['symbol']
 
 
-class Session(ormar.Model):
+class TradingSession(ormar.Model):
     id: int = ormar.Integer(primary_key=True)  # type: ignore
     instrument: Instrument = ormar.ForeignKey(
         Instrument, related_name='session', unique=True, ondelete='CASCADE'
