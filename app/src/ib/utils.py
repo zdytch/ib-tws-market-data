@@ -78,7 +78,7 @@ def get_nearest_trading_hours(trading_hours: str, tz_id: str) -> Range:
     nearest_trading_hours = Range(from_t=0, to_t=0)
     session_tz = pytz.timezone(tz_id)
     for ib_session in trading_hours.split(';'):
-        if not 'CLOSED' in ib_session:
+        if ib_session and not 'CLOSED' in ib_session:
             ib_open, ib_close = tuple(ib_session.split('-'))
             open = session_tz.localize(datetime.strptime(ib_open, '%Y%m%d:%H%M'))
             close = session_tz.localize(datetime.strptime(ib_close, '%Y%m%d:%H%M'))
