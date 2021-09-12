@@ -74,7 +74,7 @@ def get_instrument_type_by_exchange(exchange: Exchange) -> InstrumentType:
     return instrument_type
 
 
-def get_nearest_trading_hours(trading_hours: str, tz_id: str) -> Range:
+def get_nearest_trading_session(trading_hours: str, tz_id: str) -> Range:
     nearest_trading_hours = Range(from_t=0, to_t=0)
     session_tz = pytz.timezone(tz_id)
     for ib_session in trading_hours.split(';'):

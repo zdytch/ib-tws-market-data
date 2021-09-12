@@ -1,6 +1,7 @@
 from ib_insync import IB, Contract, Stock, ContFuture
 from instruments.models import Instrument, Exchange, InstrumentType
 from bars.models import Bar, BarSet
+from .schemas import InstrumentInfo
 from common.schemas import Range
 from datetime import datetime
 from decimal import Decimal
@@ -18,7 +19,9 @@ class IBConnector:
     def is_connected(self) -> bool:
         return self._ib.isConnected()
 
-    async def get_instrument(self, symbol: str, exchange: Exchange) -> Instrument:
+    async def get_instrument_info(
+        self, symbol: str, exchange: Exchange
+    ) -> InstrumentInfo:
         await self._connect()
 
         contract = await self._get_contract(symbol, exchange)
@@ -28,29 +31,20 @@ class IBConnector:
         description = details[0].longName
         tick_size = Decimal('0.01') if is_stock else Decimal(str(details[0].minTick))
         multiplier = Decimal('1.00') if is_stock else Decimal(str(contract.multiplier))
+        trading_hours = details[0].liquidHours if is_stock else details[0].tradingHours
+        nearest_trading_session = utils.get_nearest_trading_session(
+            trading_hours, details[0].timeZoneId
+        )
 
-        return Instrument(
+        return InstrumentInfo(
             symbol=symbol,
             exchange=exchange,
             type=type,
             description=description,
             tick_size=tick_size,
             multiplier=multiplier,
+            trading_session=nearest_trading_session,
         )
-
-    async def get_nearest_trading_hours(self, instrument: Instrument) -> Range:
-        await self._connect()
-
-        contract = await self._get_contract(instrument.symbol, instrument.exchange)
-        type = utils.get_instrument_type_by_exchange(instrument.exchange)
-        is_stock = type == InstrumentType.STOCK
-        details = await self._ib.reqContractDetailsAsync(contract)
-        trading_hours = details[0].liquidHours if is_stock else details[0].tradingHours
-        nearest_trading_hours = utils.get_nearest_trading_hours(
-            trading_hours, details[0].timeZoneId
-        )
-
-        return nearest_trading_hours
 
     async def get_historical_bars(
         self,
