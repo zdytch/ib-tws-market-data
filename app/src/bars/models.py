@@ -49,7 +49,7 @@ class Bar(ormar.Model):
         )
 
 
-class Range(ormar.Model):
+class BarRange(ormar.Model):
     id: int = ormar.Integer(primary_key=True)  # type: ignore
     bar_set: BarSet = ormar.ForeignKey(
         BarSet, related_name='ranges', ondelete='CASCADE'

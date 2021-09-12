@@ -1,4 +1,5 @@
 from instruments.models import Instrument, Exchange, Session
+from common.schemas import Range
 from ormar import NoMatch
 from ib.connector import ib_connector
 from time import time
@@ -23,9 +24,9 @@ async def get_session(instrument: Instrument) -> Session:
     session = await Session.objects.get_or_create(instrument=instrument)
 
     if not _is_session_up_to_date(session):
-        session.open_t, session.close_t = await _get_trading_hours_from_origin(
-            instrument
-        )
+        trading_hours = await _get_trading_hours_from_origin(instrument)
+        session.open_t = trading_hours.from_t
+        session.close_t = trading_hours.to_t
         await session.update(['open_t', 'close_t'])
 
     return session
@@ -51,7 +52,7 @@ async def _get_instrument_from_origin(symbol: str, exchange: Exchange) -> Instru
     return instrument
 
 
-async def _get_trading_hours_from_origin(instrument: Instrument) -> tuple[int, int]:
+async def _get_trading_hours_from_origin(instrument: Instrument) -> Range:
     trading_hours = await ib_connector.get_nearest_trading_hours(instrument)
 
     logger.debug(f'Received trading hours from origin: {trading_hours}')

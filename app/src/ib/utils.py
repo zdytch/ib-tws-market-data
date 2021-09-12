@@ -2,6 +2,7 @@ from typing import Union
 from ib_insync import BarData
 from instruments.models import Exchange, InstrumentType
 from bars.models import Bar, Timeframe
+from common.schemas import Range
 from datetime import datetime, date, time
 from decimal import Decimal, ROUND_HALF_UP
 import math
@@ -73,15 +74,16 @@ def get_instrument_type_by_exchange(exchange: Exchange) -> InstrumentType:
     return instrument_type
 
 
-def get_nearest_trading_hours(trading_hours: str, tz_id: str) -> tuple[int, int]:
-    nearest_trading_hours = (0, 0)
+def get_nearest_trading_hours(trading_hours: str, tz_id: str) -> Range:
+    nearest_trading_hours = Range(from_t=0, to_t=0)
     session_tz = pytz.timezone(tz_id)
     for ib_session in trading_hours.split(';'):
         if not 'CLOSED' in ib_session:
             ib_open, ib_close = tuple(ib_session.split('-'))
             open = session_tz.localize(datetime.strptime(ib_open, '%Y%m%d:%H%M'))
             close = session_tz.localize(datetime.strptime(ib_close, '%Y%m%d:%H%M'))
-            nearest_trading_hours = (int(open.timestamp()), int(close.timestamp()))
+            nearest_trading_hours.from_t = int(open.timestamp())
+            nearest_trading_hours.to_t = int(close.timestamp())
             break
 
     if not nearest_trading_hours:

@@ -1,6 +1,7 @@
-from bars.models import BarSet, Bar, Range, Timeframe
+from bars.models import BarSet, Bar, BarRange, Timeframe
 from instruments.models import Instrument
 from instruments import services as instrument_services
+from common.schemas import Range
 from . import crud
 from ib.connector import ib_connector
 from loguru import logger
@@ -13,7 +14,7 @@ async def get_bar_set(instrument: Instrument, timeframe: Timeframe) -> BarSet:
 
 
 async def get_bars(bar_set: BarSet, range: Range) -> list[Bar]:
-    existing_ranges = await Range.objects.filter(bar_set=bar_set).all()
+    existing_ranges = await BarRange.objects.filter(bar_set=bar_set).all()
     missing_ranges = _calculate_missing_ranges(range, existing_ranges)
     instrument = bar_set.instrument
 
@@ -62,7 +63,7 @@ async def _get_bars_from_origin(bar_set: BarSet, range: Range) -> list[Bar]:
 
 
 def _calculate_missing_ranges(
-    within_range: Range, existing_ranges: list[Range]
+    within_range: Range, existing_ranges: list[BarRange]
 ) -> list:
     missing_ranges = []
     next_from_t = within_range.from_t

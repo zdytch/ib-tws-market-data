@@ -1,5 +1,6 @@
 from .schemas import History, Info, Config
-from bars.models import Range, Timeframe
+from bars.models import Timeframe
+from common.schemas import Range
 from bars import services as bar_services
 from instruments.models import Exchange, InstrumentType
 from instruments import services as instrument_services

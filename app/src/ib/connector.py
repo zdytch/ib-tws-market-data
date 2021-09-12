@@ -1,6 +1,7 @@
 from ib_insync import IB, Contract, Stock, ContFuture
 from instruments.models import Instrument, Exchange, InstrumentType
-from bars.models import Bar, BarSet, Range
+from bars.models import Bar, BarSet
+from common.schemas import Range
 from datetime import datetime
 from decimal import Decimal
 from . import utils
@@ -37,9 +38,7 @@ class IBConnector:
             multiplier=multiplier,
         )
 
-    async def get_nearest_trading_hours(
-        self, instrument: Instrument
-    ) -> tuple[int, int]:
+    async def get_nearest_trading_hours(self, instrument: Instrument) -> Range:
         await self._connect()
 
         contract = await self._get_contract(instrument.symbol, instrument.exchange)
