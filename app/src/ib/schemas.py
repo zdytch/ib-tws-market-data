@@ -11,4 +11,4 @@ class InstrumentInfo(BaseModel):
     description: str
     tick_size: Decimal
     multiplier: Decimal
-    trading_session: Range
+    trading_range: Range

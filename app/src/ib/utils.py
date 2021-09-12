@@ -74,24 +74,24 @@ def get_instrument_type_by_exchange(exchange: Exchange) -> InstrumentType:
     return instrument_type
 
 
-def get_nearest_trading_session(trading_hours: str, tz_id: str) -> Range:
-    nearest_trading_hours = Range(from_t=0, to_t=0)
+def get_nearest_trading_range(trading_hours: str, tz_id: str) -> Range:
+    nearest_range = Range(from_t=0, to_t=0)
     session_tz = pytz.timezone(tz_id)
     for ib_session in trading_hours.split(';'):
         if ib_session and not 'CLOSED' in ib_session:
             ib_open, ib_close = tuple(ib_session.split('-'))
             open = session_tz.localize(datetime.strptime(ib_open, '%Y%m%d:%H%M'))
             close = session_tz.localize(datetime.strptime(ib_close, '%Y%m%d:%H%M'))
-            nearest_trading_hours.from_t = int(open.timestamp())
-            nearest_trading_hours.to_t = int(close.timestamp())
+            nearest_range.from_t = int(open.timestamp())
+            nearest_range.to_t = int(close.timestamp())
             break
 
-    if not nearest_trading_hours:
+    if not nearest_range.from_t or not nearest_range.to_t:
         raise ValueError(
-            f'Cannot get nearest trading hours from trading hours {trading_hours}'
+            f'Cannot get nearest trading range from trading hours {trading_hours}'
         )
 
-    return nearest_trading_hours
+    return nearest_range
 
 
 def _round_with_quantum(number: Decimal, quantum: Decimal) -> Decimal:

@@ -32,7 +32,7 @@ class IBConnector:
         tick_size = Decimal('0.01') if is_stock else Decimal(str(details[0].minTick))
         multiplier = Decimal('1.00') if is_stock else Decimal(str(contract.multiplier))
         trading_hours = details[0].liquidHours if is_stock else details[0].tradingHours
-        nearest_trading_session = utils.get_nearest_trading_session(
+        nearest_trading_range = utils.get_nearest_trading_range(
             trading_hours, details[0].timeZoneId
         )
 
@@ -43,7 +43,7 @@ class IBConnector:
             description=description,
             tick_size=tick_size,
             multiplier=multiplier,
-            trading_session=nearest_trading_session,
+            trading_range=nearest_trading_range,
         )
 
     async def get_historical_bars(

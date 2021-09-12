@@ -29,8 +29,8 @@ async def get_session(instrument: Instrument) -> TradingSession:
         info = await ib_connector.get_instrument_info(
             instrument.symbol, instrument.exchange
         )
-        session.open_t = info.trading_session.from_t
-        session.close_t = info.trading_session.to_t
+        session.open_t = info.trading_range.from_t
+        session.close_t = info.trading_range.to_t
         await session.update(['open_t', 'close_t'])
 
     return session
