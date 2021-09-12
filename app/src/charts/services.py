@@ -4,16 +4,24 @@ from common.schemas import Range
 from bars import services as bar_services
 from instruments.models import Exchange, InstrumentType
 from instruments import services as instrument_services
+from loguru import logger
 
 
 async def get_history(ticker: str, timeframe: str, from_t: int, to_t: int) -> History:
     history = History()
+    bars = []
+    latest_t = 0
     exchange, symbol = _split_ticker(ticker)
-    instrument = await instrument_services.get_instrument(
-        symbol=symbol, exchange=exchange
-    )
-    bar_set = await bar_services.get_bar_set(instrument, Timeframe(timeframe))
-    bars = await bar_services.get_bars(bar_set, Range(from_t=from_t, to_t=to_t))
+
+    try:
+        instrument = await instrument_services.get_instrument(
+            symbol=symbol, exchange=exchange
+        )
+        bar_set = await bar_services.get_bar_set(instrument, Timeframe(timeframe))
+        bars = await bar_services.get_bars(bar_set, Range(from_t=from_t, to_t=to_t))
+        latest_t = await bar_services.get_latest_timestamp(bar_set)
+    except Exception as error:
+        logger.error(error)
 
     for bar in bars:
         history.o.append(bar.o)
@@ -25,38 +33,37 @@ async def get_history(ticker: str, timeframe: str, from_t: int, to_t: int) -> Hi
 
     if bars:
         history.s = 'ok'
-    else:
-        latest_t = await bar_services.get_latest_timestamp(bar_set)
+    elif latest_t:
         history.nextTime = latest_t
 
     return history
 
 
 async def get_info(ticker: str) -> Info:
+    info = Info(name=ticker, ticker=ticker)
     exchange, symbol = _split_ticker(ticker)
-    instrument = await instrument_services.get_instrument(
-        symbol=symbol, exchange=exchange
-    )
-    instrument_type = _instrument_type_to_chart(instrument.type)
-    timezone, session = _exchange_schedule_to_chart(instrument.exchange)
-    price_scale = 10 ** abs(instrument.tick_size.normalize().as_tuple().exponent)
-    min_movement = int(instrument.tick_size * price_scale)
 
-    return Info(
-        name=ticker,
-        ticker=ticker,
-        type=instrument_type,
-        description=instrument.description,
-        exchange=instrument.exchange,
-        listed_exchange=instrument.exchange,
-        session=session,
-        timezone=timezone,
-        currency_code='USD',
-        has_daily=True,
-        has_intraday=True,
-        minmov=min_movement,
-        pricescale=price_scale,
-    )
+    try:
+        instrument = await instrument_services.get_instrument(
+            symbol=symbol, exchange=exchange
+        )
+        instrument_type = _instrument_type_to_chart(instrument.type)
+        timezone, session = _exchange_schedule_to_chart(instrument.exchange)
+        price_scale = 10 ** abs(instrument.tick_size.normalize().as_tuple().exponent)
+        min_movement = int(instrument.tick_size * price_scale)
+
+        info.type = instrument_type
+        info.description = instrument.description
+        info.exchange = instrument.exchange
+        info.listed_exchange = instrument.exchange
+        info.session = session
+        info.timezone = timezone
+        info.minmov = min_movement
+        info.pricescale = price_scale
+    except Exception as error:
+        logger.error(error)
+
+    return info
 
 
 def get_config() -> Config:

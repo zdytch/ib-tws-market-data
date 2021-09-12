@@ -8,20 +8,16 @@ from loguru import logger
 async def get_instrument(symbol: str, exchange: Exchange) -> Instrument:
     try:
         instrument = await Instrument.objects.get(symbol=symbol, exchange=exchange)
-
     except NoMatch:
-        try:
-            info = await ib_connector.get_instrument_info(symbol, exchange)
-            instrument = await Instrument.objects.create(
-                symbol=info.symbol,
-                exchange=info.exchange,
-                type=info.type,
-                description=info.description,
-                tick_size=info.tick_size,
-                multiplier=info.multiplier,
-            )
-        except Exception as e:
-            logger.debug(e)
+        info = await ib_connector.get_instrument_info(symbol, exchange)
+        instrument = await Instrument.objects.create(
+            symbol=info.symbol,
+            exchange=info.exchange,
+            type=info.type,
+            description=info.description,
+            tick_size=info.tick_size,
+            multiplier=info.multiplier,
+        )
 
     return instrument
 

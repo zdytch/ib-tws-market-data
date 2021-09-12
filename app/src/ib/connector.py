@@ -82,10 +82,7 @@ class IBConnector:
 
     async def _connect(self, client_id=14):
         if not self.is_connected:
-            try:
-                await self._ib.connectAsync('trixter-ib', 4002, client_id)
-            except Exception as error:
-                logger.error(error)
+            await self._ib.connectAsync('trixter-ib', 4002, client_id)
 
     async def _get_contract(self, symbol: str, exchange: Exchange) -> Contract:
         type = utils.get_instrument_type_by_exchange(exchange)
