@@ -82,9 +82,10 @@ def get_nearest_trading_range(trading_hours: str, tz_id: str) -> Range:
             ib_open, ib_close = tuple(ib_session.split('-'))
             open = session_tz.localize(datetime.strptime(ib_open, '%Y%m%d:%H%M'))
             close = session_tz.localize(datetime.strptime(ib_close, '%Y%m%d:%H%M'))
-            nearest_range.from_t = int(open.timestamp())
-            nearest_range.to_t = int(close.timestamp())
-            break
+            if close > datetime.now(pytz.utc):
+                nearest_range.from_t = int(open.timestamp())
+                nearest_range.to_t = int(close.timestamp())
+                break
 
     if not nearest_range.from_t or not nearest_range.to_t:
         raise ValueError(
