@@ -48,6 +48,9 @@ class Bar(ormar.Model):
             f't={self.t}({datetime.fromtimestamp(self.t)})'
         )
 
+    def __repr__(self):
+        return self.__str__()
+
 
 class BarRange(ormar.Model):
     id: int = ormar.Integer(primary_key=True)  # type: ignore
@@ -65,3 +68,6 @@ class BarRange(ormar.Model):
             f'from_t={self.from_t}({datetime.fromtimestamp(self.from_t)}) '
             f'to_t={self.to_t}({datetime.fromtimestamp(self.to_t)})'
         )
+
+    def __repr__(self):
+        return self.__str__()

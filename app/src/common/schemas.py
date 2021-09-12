@@ -11,3 +11,6 @@ class Range(BaseModel):
             f'from_t={self.from_t}({datetime.fromtimestamp(self.from_t)}) '
             f'to_t={self.to_t}({datetime.fromtimestamp(self.to_t)})'
         )
+
+    def __repr__(self):
+        return self.__str__()

@@ -52,3 +52,6 @@ class TradingSession(ormar.Model):
             f'open_t={self.open_t}({datetime.fromtimestamp(self.open_t)}) '
             f'close_t={self.close_t}({datetime.fromtimestamp(self.close_t)})'
         )
+
+    def __repr__(self):
+        return self.__str__()
