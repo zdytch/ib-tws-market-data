@@ -1,11 +1,13 @@
-from instruments.models import Instrument, Exchange, TradingSession
+from instruments.models import Instrument, Exchange, TradingSession, InstrumentType
 from common.schemas import Range
 from ormar import NoMatch
 from ib.connector import ib_connector
 from time import time
 
 
-async def get_instrument(symbol: str, exchange: Exchange) -> Instrument:
+async def get_instrument(ticker: str) -> Instrument:
+    exchange, symbol = _split_ticker(ticker)
+
     try:
         instrument = await Instrument.objects.get(symbol=symbol, exchange=exchange)
     except NoMatch:
@@ -20,6 +22,19 @@ async def get_instrument(symbol: str, exchange: Exchange) -> Instrument:
         )
 
     return instrument
+
+
+async def get_instrument_list(
+    search: str = None,
+    type: InstrumentType = None,
+) -> list[Instrument]:
+    instruments = Instrument.objects
+    if search:
+        instruments = instruments.filter(symbol__icontains=search)
+    if type:
+        instruments = instruments.filter(type=type)
+
+    return await instruments.all()
 
 
 async def get_session(instrument: Instrument) -> TradingSession:
@@ -56,3 +71,10 @@ def _is_session_open(instrument: Instrument) -> bool:
 
 def _is_session_up_to_date(session: TradingSession) -> bool:
     return session.close_t > int(time())
+
+
+def _split_ticker(ticker: str) -> tuple[Exchange, str]:
+    exchange, symbol = tuple(ticker.split(':'))
+    exchange = Exchange(exchange)
+
+    return (exchange, symbol)
