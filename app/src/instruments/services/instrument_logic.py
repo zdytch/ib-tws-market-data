@@ -1,8 +1,8 @@
 from instruments.models import Instrument, Exchange, TradingSession
+from common.schemas import Range
 from ormar import NoMatch
 from ib.connector import ib_connector
 from time import time
-from loguru import logger
 
 
 async def get_instrument(symbol: str, exchange: Exchange) -> Instrument:
@@ -36,15 +36,13 @@ async def get_session(instrument: Instrument) -> TradingSession:
     return session
 
 
-async def is_overlap_open_session(
-    instrument: Instrument, from_t: int, to_t: int
-) -> bool:
+async def is_overlap_open_session(instrument: Instrument, range: Range) -> bool:
     session = await get_session(instrument)
 
     return (
-        (from_t >= session.open_t and to_t < session.close_t)
-        or from_t < session.open_t < to_t
-        or from_t < session.close_t < to_t
+        (range.from_t >= session.open_t and range.to_t < session.close_t)
+        or range.from_t < session.open_t < range.to_t
+        or range.from_t < session.close_t < range.to_t
     )
 
 
