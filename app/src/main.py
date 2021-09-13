@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from config import settings, db
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi_pagination import add_pagination
 from routers import api_router
 import debugpy
 
@@ -16,6 +17,8 @@ app.add_middleware(
 )
 
 app.include_router(api_router, prefix=settings.API_URL_PREFIX)
+
+add_pagination(app)
 
 
 @app.on_event('startup')
