@@ -21,7 +21,7 @@ async def get_bars(bar_set: BarSet, range: Range) -> list[Bar]:
     for missing_range in missing_ranges:
         # If missing range doesn't overlap with open session range
         if not await instrument_services.is_overlap_open_session(
-            instrument, missing_range.from_t, missing_range.to_t
+            instrument, missing_range
         ):
             # Extend missing range by 1 day to overlap possible gaps in db
             missing_range.from_t -= 86400
@@ -64,7 +64,7 @@ async def _get_bars_from_origin(bar_set: BarSet, range: Range) -> list[Bar]:
 
 def _calculate_missing_ranges(
     within_range: Range, existing_ranges: list[BarRange]
-) -> list:
+) -> list[Range]:
     missing_ranges = []
     next_from_t = within_range.from_t
 
