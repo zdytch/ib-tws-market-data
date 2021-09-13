@@ -11,12 +11,9 @@ async def get_history(ticker: str, timeframe: str, from_t: int, to_t: int) -> Hi
     history = History()
     bars = []
     latest_t = 0
-    exchange, symbol = _split_ticker(ticker)
 
     try:
-        instrument = await instrument_services.get_instrument(
-            symbol=symbol, exchange=exchange
-        )
+        instrument = await instrument_services.get_instrument(ticker)
         bar_set = await bar_services.get_bar_set(instrument, Timeframe(timeframe))
         bars = await bar_services.get_bars(bar_set, Range(from_t=from_t, to_t=to_t))
         latest_t = await bar_services.get_latest_timestamp(bar_set)
@@ -41,12 +38,9 @@ async def get_history(ticker: str, timeframe: str, from_t: int, to_t: int) -> Hi
 
 async def get_info(ticker: str) -> Info:
     info = Info(name=ticker, ticker=ticker)
-    exchange, symbol = _split_ticker(ticker)
 
     try:
-        instrument = await instrument_services.get_instrument(
-            symbol=symbol, exchange=exchange
-        )
+        instrument = await instrument_services.get_instrument(ticker)
         instrument_type = _instrument_type_to_chart(instrument.type)
         timezone, session = _exchange_schedule_to_chart(instrument.exchange)
         price_scale = 10 ** abs(instrument.tick_size.normalize().as_tuple().exponent)
@@ -74,13 +68,6 @@ def get_config() -> Config:
         supports_marks=False,
         supports_timescale_marks=False,
     )
-
-
-def _split_ticker(ticker: str) -> tuple[Exchange, str]:
-    exchange, symbol = tuple(ticker.split(':'))
-    exchange = Exchange(exchange)
-
-    return (exchange, symbol)
 
 
 def _instrument_type_to_chart(type: InstrumentType) -> str:

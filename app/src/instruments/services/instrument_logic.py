@@ -5,7 +5,9 @@ from ib.connector import ib_connector
 from time import time
 
 
-async def get_instrument(symbol: str, exchange: Exchange) -> Instrument:
+async def get_instrument(ticker: str) -> Instrument:
+    exchange, symbol = _split_ticker(ticker)
+
     try:
         instrument = await Instrument.objects.get(symbol=symbol, exchange=exchange)
     except NoMatch:
@@ -56,3 +58,10 @@ def _is_session_open(instrument: Instrument) -> bool:
 
 def _is_session_up_to_date(session: TradingSession) -> bool:
     return session.close_t > int(time())
+
+
+def _split_ticker(ticker: str) -> tuple[Exchange, str]:
+    exchange, symbol = tuple(ticker.split(':'))
+    exchange = Exchange(exchange)
+
+    return (exchange, symbol)
