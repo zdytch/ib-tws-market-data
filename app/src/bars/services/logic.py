@@ -26,9 +26,9 @@ async def get_bars(bar_set: BarSet, range: Range) -> list[Bar]:
 
         # If missing range doesn't overlap with open session range
         if not is_overlap_session:
-            # Extend missing range by 1 day to overlap possible gaps in db
-            missing_range.from_t -= 86400
-            missing_range.to_t += 86400
+            # Extend missing range by (1 day + 1 sec) to overlap possible gaps in db
+            missing_range.from_t -= 86401
+            missing_range.to_t += 86401
 
         logger.debug(
             f'Missing bars in range. Retreiving from origin... '
