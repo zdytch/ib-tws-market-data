@@ -35,7 +35,9 @@ async def get_bars(bar_set: BarSet, range: Range) -> list[Bar]:
             origin_bars = await _get_bars_from_origin(bar_set, missing_range)
             await crud.add_bars(bar_set, origin_bars)
 
-            logger.debug(f'Bars created. Instrument: {instrument}. Range: {range}')
+            logger.debug(
+                f'Bars created. Instrument: {instrument}. Range: {missing_range}'
+            )
         except Exception as e:
             logger.debug(e)
 
