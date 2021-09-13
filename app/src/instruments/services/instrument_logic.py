@@ -1,4 +1,4 @@
-from instruments.models import Instrument, Exchange, TradingSession
+from instruments.models import Instrument, Exchange, TradingSession, InstrumentType
 from common.schemas import Range
 from ormar import NoMatch
 from ib.connector import ib_connector
@@ -22,6 +22,19 @@ async def get_instrument(ticker: str) -> Instrument:
         )
 
     return instrument
+
+
+async def get_instrument_list(
+    search: str = None,
+    type: InstrumentType = None,
+) -> list[Instrument]:
+    instruments = Instrument.objects
+    if search:
+        instruments = instruments.filter(symbol__icontains=search)
+    if type:
+        instruments = instruments.filter(type=type)
+
+    return await instruments.all()
 
 
 async def get_session(instrument: Instrument) -> TradingSession:
