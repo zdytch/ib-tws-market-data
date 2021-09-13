@@ -17,3 +17,8 @@ class InstrumentGet(BaseModel):
 
 class InstrumentList(InstrumentGet):
     pass
+
+
+class SessionGet(BaseModel):
+    open_t: int
+    close_t: int

@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Response, HTTPException
+from fastapi import APIRouter, HTTPException
 
 from fastapi_pagination import Page, paginate
 from ormar import NoMatch
 from .models import InstrumentType
-from .schemas import InstrumentGet, InstrumentList
+from .schemas import InstrumentGet, InstrumentList, SessionGet
 from . import services
 
 instrument_router = APIRouter(tags=['Instruments'])
@@ -23,6 +23,18 @@ async def get_instrument_list(
 async def get_instrument(ticker: str):
     try:
         return await services.get_instrument(ticker)
+    except NoMatch:
+        raise HTTPException(
+            status_code=404,
+            detail=f'Instrument with ticker {ticker} not found',
+        )
+
+
+@instrument_router.get('/{ticker}/session', response_model=SessionGet)
+async def get_session(ticker: str):
+    try:
+        instrument = await services.get_instrument(ticker)
+        return await services.get_session(instrument)
     except NoMatch:
         raise HTTPException(
             status_code=404,
