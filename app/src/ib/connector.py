@@ -1,5 +1,5 @@
 from ib_insync import IB, Contract, Stock, ContFuture
-from instruments.models import Instrument, Exchange, InstrumentType
+from instruments.models import Exchange, InstrumentType
 from bars.models import Bar, BarSet
 from .schemas import InstrumentInfo
 from common.schemas import Range
