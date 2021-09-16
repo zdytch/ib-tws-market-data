@@ -30,6 +30,15 @@ class Info(BaseModel):
     pricescale: int = 0
 
 
+class SearchResult(BaseModel):
+    symbol: str
+    full_name: str
+    ticker: str
+    description: str
+    exchange: str
+    type: str
+
+
 class Config(BaseModel):
     supported_resolutions: list[str]
     supports_search: bool
