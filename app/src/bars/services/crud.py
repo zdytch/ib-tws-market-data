@@ -5,10 +5,12 @@ from asyncpg.exceptions import UniqueViolationError
 
 async def add_bars(bar_set: BarSet, bars: list[Bar]) -> None:
     if bars:
-        try:
-            await Bar.objects.bulk_create(bars)
-        except UniqueViolationError:
-            pass
+        # TODO: Ormar's bulk_create() seems to work incorrectly. Implement with SQLAlchemy 2.0
+        for bar in bars:
+            try:
+                await bar.save()
+            except UniqueViolationError:
+                pass
 
         min_t = min(bars, key=lambda bar: bar.t).t
         max_t = max(bars, key=lambda bar: bar.t).t
