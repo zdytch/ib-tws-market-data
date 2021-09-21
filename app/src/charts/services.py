@@ -88,12 +88,9 @@ def _exchange_schedule_to_chart(exchange: Exchange) -> tuple[str, str]:
     elif exchange == Exchange.NYMEX:
         tz_id = 'America/New_York'
         session = '1800-1700'
-    elif exchange == Exchange.GLOBEX:
+    elif exchange in (Exchange.GLOBEX, Exchange.ECBOT):
         tz_id = 'America/Chicago'
         session = '1700-1600'
-    elif exchange == Exchange.ECBOT:
-        tz_id = 'America/Chicago'
-        session = '1900-1320'
     else:
         raise ValueError(f'Cannot get schedule for exchange {exchange}')
 
