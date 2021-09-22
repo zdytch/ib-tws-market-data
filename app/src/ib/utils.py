@@ -3,8 +3,9 @@ from ib_insync import BarData
 from instruments.models import Exchange, InstrumentType
 from bars.models import Bar, Timeframe
 from common.schemas import Range
+from common.utils import round_with_quantum
 from datetime import datetime, date, time
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal
 import math
 import pytz
 
@@ -54,10 +55,10 @@ def timestamp_from_ib(dt: Union[datetime, date]) -> int:
 
 def bar_from_ib(ib_bar: BarData, tick_size: Decimal, volume_multiplier: int) -> Bar:
     return Bar(
-        o=_round_with_quantum(Decimal(ib_bar.open), tick_size),
-        h=_round_with_quantum(Decimal(ib_bar.high), tick_size),
-        l=_round_with_quantum(Decimal(ib_bar.low), tick_size),
-        c=_round_with_quantum(Decimal(ib_bar.close), tick_size),
+        o=round_with_quantum(Decimal(ib_bar.open), tick_size),
+        h=round_with_quantum(Decimal(ib_bar.high), tick_size),
+        l=round_with_quantum(Decimal(ib_bar.low), tick_size),
+        c=round_with_quantum(Decimal(ib_bar.close), tick_size),
         v=int(ib_bar.volume) * volume_multiplier,
         t=timestamp_from_ib(ib_bar.date),
     )
@@ -93,7 +94,3 @@ def get_nearest_trading_range(trading_hours: str, tz_id: str) -> Range:
         )
 
     return nearest_range
-
-
-def _round_with_quantum(number: Decimal, quantum: Decimal) -> Decimal:
-    return quantum * (number / quantum).quantize(Decimal('1.'), ROUND_HALF_UP)
