@@ -3,8 +3,10 @@ from instruments.models import Instrument
 from instruments import services as instrument_services
 from common.schemas import Range
 from . import crud
+from . import utils
 from ib.connector import ib_connector
 from loguru import logger
+import math
 
 
 async def get_bar_set(instrument: Instrument, timeframe: Timeframe) -> BarSet:
@@ -16,6 +18,7 @@ async def get_bar_set(instrument: Instrument, timeframe: Timeframe) -> BarSet:
 async def get_bars(bar_set: BarSet, range: Range) -> list[Bar]:
     existing_ranges = await BarRange.objects.filter(bar_set=bar_set).all()
     missing_ranges = _calculate_missing_ranges(range, existing_ranges)
+    missing_ranges = _split_ranges(missing_ranges, bar_set.timeframe, 100)
     instrument = bar_set.instrument
     live_bar = None
 
@@ -97,3 +100,26 @@ def _calculate_missing_ranges(
         missing_ranges.append(Range(from_t=next_from_t, to_t=within_range.to_t))
 
     return missing_ranges
+
+
+def _split_ranges(
+    ranges: list[Range], timeframe: Timeframe, length: int
+) -> list[Range]:
+    splitted_ranges = []
+    step_size = utils.get_step_size(timeframe)
+
+    for range_to_split in ranges:
+        bar_count = math.ceil((range_to_split.to_t - range_to_split.from_t) / step_size)
+        part_count = math.ceil(bar_count / length)
+
+        to_t = range_to_split.to_t
+        for _ in range(part_count):
+            from_t = to_t - length * step_size
+            if from_t < range_to_split.from_t:
+                from_t = range_to_split.from_t
+
+            splitted_range = Range(from_t=from_t, to_t=to_t)
+            splitted_ranges.append(splitted_range)
+            to_t = from_t - step_size
+
+    return splitted_ranges

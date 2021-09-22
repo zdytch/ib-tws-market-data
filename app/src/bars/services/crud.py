@@ -1,6 +1,7 @@
-from bars.models import BarSet, Bar, BarRange, Timeframe
+from bars.models import BarSet, Bar, BarRange
 from common.schemas import Range
 from asyncpg.exceptions import UniqueViolationError
+from . import utils
 
 
 async def add_bars(bar_set: BarSet, bars: list[Bar]) -> None:
@@ -28,7 +29,7 @@ async def get_bars(bar_set: BarSet, range: Range) -> list[Bar]:
 
 async def _perform_range_defragmentation(bar_set: BarSet) -> None:
     ranges = await BarRange.objects.filter(bar_set=bar_set).all()
-    step_size = _get_step_size(bar_set.timeframe)
+    step_size = utils.get_step_size(bar_set.timeframe)
 
     is_updated = False
     for range in ranges:
@@ -61,24 +62,3 @@ async def _perform_range_defragmentation(bar_set: BarSet) -> None:
                     await range.update(['from_t', 'to_t'])
                 else:
                     await range.delete()
-
-
-def _get_step_size(timeframe: Timeframe):
-    if timeframe == Timeframe.M1:
-        step_size = 60
-    elif timeframe == Timeframe.M5:
-        step_size = 60 * 5
-    elif timeframe == Timeframe.M30:
-        step_size = 60 * 30
-    elif timeframe == Timeframe.M60:
-        step_size = 60 * 60
-    elif timeframe == Timeframe.DAY:
-        step_size = 60 * 60 * 24
-    elif timeframe == Timeframe.WEEK:
-        step_size = 60 * 60 * 24 * 7
-    elif timeframe == Timeframe.MONTH:
-        step_size = 60 * 60 * 24 * 7 * 4
-    else:
-        raise ValueError(f'Cannot get step size for timeframe {timeframe}')
-
-    return step_size
