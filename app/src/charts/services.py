@@ -21,12 +21,12 @@ async def get_history(ticker: str, timeframe: str, from_t: int, to_t: int) -> Hi
         logger.error(error)
 
     for bar in bars:
-        history.o.append(bar.o)
-        history.h.append(bar.h)
-        history.l.append(bar.l)
-        history.c.append(bar.c)
-        history.v.append(bar.v)
-        history.t.append(bar.t)
+        history.o.append(bar.open)
+        history.h.append(bar.high)
+        history.l.append(bar.low)
+        history.c.append(bar.close)
+        history.v.append(bar.volume)
+        history.t.append(int(bar.timestamp.timestamp()))
 
     if bars:
         history.s = 'ok'
