@@ -4,7 +4,9 @@ from common.schemas import Range
 from bars import services as bar_services
 from instruments.models import Exchange, InstrumentType
 from instruments import services as instrument_services
+from datetime import datetime
 from loguru import logger
+import pytz
 
 
 async def get_history(ticker: str, timeframe: str, from_t: int, to_t: int) -> History:
@@ -15,7 +17,12 @@ async def get_history(ticker: str, timeframe: str, from_t: int, to_t: int) -> Hi
     try:
         instrument = await instrument_services.get_instrument(ticker)
         bar_set = await bar_services.get_bar_set(instrument, Timeframe(timeframe))
-        bars = await bar_services.get_bars(bar_set, Range(from_t=from_t, to_t=to_t))
+
+        from_dt = datetime.fromtimestamp(from_t, pytz.utc)
+        to_dt = datetime.fromtimestamp(to_t, pytz.utc)
+        range = Range(from_dt=from_dt, to_dt=to_dt)
+
+        bars = await bar_services.get_bars(bar_set, range)
         latest_t = await bar_services.get_latest_timestamp(bar_set)
     except Exception as error:
         logger.error(error)

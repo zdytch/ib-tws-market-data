@@ -76,21 +76,17 @@ def get_instrument_type_by_exchange(exchange: Exchange) -> InstrumentType:
 
 
 def get_nearest_trading_range(trading_hours: str, tz_id: str) -> Range:
-    nearest_range = Range(from_t=0, to_t=0)
+    nearest_range = Range(from_dt=datetime.min, to_dt=datetime.min)
     session_tz = pytz.timezone(tz_id)
+
     for ib_session in trading_hours.split(';'):
         if ib_session and not 'CLOSED' in ib_session:
             ib_open, ib_close = tuple(ib_session.split('-'))
             open = session_tz.localize(datetime.strptime(ib_open, '%Y%m%d:%H%M'))
             close = session_tz.localize(datetime.strptime(ib_close, '%Y%m%d:%H%M'))
             if close > datetime.now(pytz.utc):
-                nearest_range.from_t = int(open.timestamp())
-                nearest_range.to_t = int(close.timestamp())
+                nearest_range.from_dt = open
+                nearest_range.to_dt = close
                 break
-
-    if not nearest_range.from_t or not nearest_range.to_t:
-        raise ValueError(
-            f'Cannot get nearest trading range from trading hours {trading_hours}'
-        )
 
     return nearest_range

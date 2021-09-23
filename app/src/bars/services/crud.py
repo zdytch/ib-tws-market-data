@@ -1,6 +1,7 @@
 from bars.models import BarSet, Bar, BarRange
 from common.schemas import Range
 from asyncpg.exceptions import UniqueViolationError
+from datetime import datetime
 from . import utils
 
 
@@ -13,17 +14,17 @@ async def add_bars(bar_set: BarSet, bars: list[Bar]) -> None:
             except UniqueViolationError:
                 pass
 
-        min_t = min(bars, key=lambda bar: bar.t).t
-        max_t = max(bars, key=lambda bar: bar.t).t
+        min_dt = min(bars, key=lambda bar: bar.timestamp).timestamp
+        max_dt = max(bars, key=lambda bar: bar.timestamp).timestamp
 
-        await BarRange.objects.create(bar_set=bar_set, from_t=min_t, to_t=max_t)
+        await BarRange.objects.create(bar_set=bar_set, from_dt=min_dt, to_dt=max_dt)
 
         await _perform_range_defragmentation(bar_set)
 
 
 async def get_bars(bar_set: BarSet, range: Range) -> list[Bar]:
     return await Bar.objects.filter(
-        bar_set=bar_set, t__gte=range.from_t, t__lte=range.to_t
+        bar_set=bar_set, timestamp__gte=range.from_dt, timestamp__lte=range.to_dt
     ).all()
 
 
@@ -35,30 +36,30 @@ async def _perform_range_defragmentation(bar_set: BarSet) -> None:
     for range in ranges:
         for next_range in ranges:
             if (
-                range.from_t
-                and range.to_t
-                and next_range.from_t
-                and next_range.to_t
+                range.from_dt
+                and range.to_dt
+                and next_range.from_dt
+                and next_range.to_dt
                 and next_range is not range
                 and (
-                    range.from_t - step_size
-                    <= next_range.from_t
-                    <= range.to_t + step_size
-                    or range.from_t - step_size
-                    <= next_range.to_t
-                    <= range.to_t + step_size
+                    range.from_dt - step_size
+                    <= next_range.from_dt
+                    <= range.to_dt + step_size
+                    or range.from_dt - step_size
+                    <= next_range.to_dt
+                    <= range.to_dt + step_size
                 )
             ):
-                range.from_t = min((next_range.from_t, range.from_t))
-                range.to_t = max((next_range.to_t, range.to_t))
-                next_range.from_t = 0
-                next_range.to_t = 0
+                range.from_dt = min((next_range.from_dt, range.from_dt))
+                range.to_dt = max((next_range.to_dt, range.to_dt))
+                next_range.from_dt = datetime.min
+                next_range.to_dt = datetime.min
                 is_updated = True
 
     if is_updated:
         async with BarRange.Meta.database.transaction():
             for range in ranges:
-                if range.from_t and range.to_t:
-                    await range.update(['from_t', 'to_t'])
+                if range.from_dt and range.to_dt:
+                    await range.update(['from_dt', 'to_dt'])
                 else:
                     await range.delete()

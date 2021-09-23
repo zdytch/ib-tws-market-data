@@ -48,17 +48,8 @@ class BarRange(ormar.Model):
     bar_set: BarSet = ormar.ForeignKey(
         BarSet, related_name='ranges', ondelete='CASCADE'
     )
-    from_t: int = ormar.Integer(minimum=0, default=0)  # type: ignore
-    to_t: int = ormar.Integer(minimum=0, default=0)  # type: ignore
+    from_dt: datetime = ormar.DateTime(timezone=True)  # type: ignore
+    to_dt: datetime = ormar.DateTime(timezone=True)  # type: ignore
 
     class Meta(BaseMeta):
-        orders_by = ['from_t']
-
-    def __str__(self):
-        return (
-            f'from_t={self.from_t}({datetime.fromtimestamp(self.from_t)}) '
-            f'to_t={self.to_t}({datetime.fromtimestamp(self.to_t)})'
-        )
-
-    def __repr__(self):
-        return self.__str__()
+        orders_by = ['from_dt']

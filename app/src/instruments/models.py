@@ -41,17 +41,8 @@ class TradingSession(ormar.Model):
     instrument: Instrument = ormar.ForeignKey(
         Instrument, related_name='session', unique=True, ondelete='CASCADE'
     )
-    open_t: int = ormar.Integer(minimum=0, default=0)  # type: ignore
-    close_t: int = ormar.Integer(minimum=0, default=0)  # type: ignore
+    open_dt: datetime = ormar.DateTime(timezone=True)  # type: ignore
+    close_dt: datetime = ormar.DateTime(timezone=True)  # type: ignore
 
     class Meta(BaseMeta):
         pass
-
-    def __str__(self):
-        return (
-            f'open_t={self.open_t}({datetime.fromtimestamp(self.open_t)}) '
-            f'close_t={self.close_t}({datetime.fromtimestamp(self.close_t)})'
-        )
-
-    def __repr__(self):
-        return self.__str__()

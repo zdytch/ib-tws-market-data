@@ -20,7 +20,7 @@ async def get_indicator(ticker: str, length: int) -> Indicator:
         if await instrument_services.is_session_open(instrument):
             to_dt -= timedelta(days=1)
         from_dt = to_dt - timedelta(days=30)  # TODO Better approach
-        range = Range(from_t=int(from_dt.timestamp()), to_t=int(to_dt.timestamp()))
+        range = Range(from_dt=from_dt, to_dt=to_dt)
 
         bars = await bar_services.get_bars(bar_set, range)
         session = await instrument_services.get_session(instrument)
