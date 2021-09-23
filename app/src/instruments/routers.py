@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException
-
 from fastapi_pagination import Page, paginate
 from ormar import NoMatch
 from .models import InstrumentType
