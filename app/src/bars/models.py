@@ -35,7 +35,7 @@ class Bar(ormar.Model):
     high: Decimal = ormar.Decimal(max_digits=18, decimal_places=8)  # type: ignore
     low: Decimal = ormar.Decimal(max_digits=18, decimal_places=8)  # type: ignore
     close: Decimal = ormar.Decimal(max_digits=18, decimal_places=8)  # type: ignore
-    volume: int = ormar.Integer(minimum=0, default=0)  # type: ignore
+    volume: int = ormar.Integer(minimum=0)  # type: ignore
     timestamp: datetime = ormar.DateTime(timezone=True)  # type: ignore
 
     class Meta(BaseMeta):
