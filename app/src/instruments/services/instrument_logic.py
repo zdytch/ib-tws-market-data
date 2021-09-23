@@ -61,12 +61,10 @@ async def is_overlap_open_session(instrument: Instrument, range: Range) -> bool:
     )
 
 
-def _is_session_open(instrument: Instrument) -> bool:
-    return (
-        instrument.nearest_session.open_t
-        <= int(time())
-        < instrument.nearest_session.close_t
-    )
+async def is_session_open(instrument: Instrument) -> bool:
+    session = await get_session(instrument)
+
+    return session.open_t <= int(time()) < session.close_t
 
 
 def _is_session_up_to_date(session: TradingSession) -> bool:
