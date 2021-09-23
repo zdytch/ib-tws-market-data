@@ -47,7 +47,7 @@ async def get_session(instrument: Instrument) -> TradingSession:
         )
         session.open_dt = info.trading_range.from_dt
         session.close_dt = info.trading_range.to_dt
-        await session.update(['open_t', 'close_t'])
+        await session.update(['open_dt', 'close_dt'])
 
     return session
 
