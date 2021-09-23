@@ -3,10 +3,8 @@ from instruments.models import Exchange, InstrumentType
 from bars.models import Bar, BarSet
 from .schemas import InstrumentInfo
 from common.schemas import Range
-from datetime import datetime
 from decimal import Decimal
 from . import utils
-import pytz
 from loguru import logger
 
 
