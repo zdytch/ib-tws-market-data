@@ -1,7 +1,6 @@
 from bars.models import BarSet, Bar, BarRange
 from common.schemas import Range
 from asyncpg.exceptions import UniqueViolationError
-from datetime import datetime
 from . import utils
 
 
