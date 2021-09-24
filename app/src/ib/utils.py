@@ -42,7 +42,7 @@ def duration_to_ib(from_dt: datetime, to_dt: datetime) -> str:
     return duration
 
 
-def timestamp_from_ib(dt: Union[datetime, date]) -> int:
+def timestamp_from_ib(dt: Union[datetime, date]) -> datetime:
     if type(dt) is date:
         date_time = pytz.utc.localize(datetime.combine(dt, time(0, 0)))
     elif type(dt) is datetime:
@@ -50,17 +50,17 @@ def timestamp_from_ib(dt: Union[datetime, date]) -> int:
     else:
         raise ValueError(f'Cannot convert datetime {dt} from IB')
 
-    return int(date_time.timestamp())
+    return date_time
 
 
 def bar_from_ib(ib_bar: BarData, tick_size: Decimal, volume_multiplier: int) -> Bar:
     return Bar(
-        o=round_with_quantum(Decimal(ib_bar.open), tick_size),
-        h=round_with_quantum(Decimal(ib_bar.high), tick_size),
-        l=round_with_quantum(Decimal(ib_bar.low), tick_size),
-        c=round_with_quantum(Decimal(ib_bar.close), tick_size),
-        v=int(ib_bar.volume) * volume_multiplier,
-        t=timestamp_from_ib(ib_bar.date),
+        open=round_with_quantum(Decimal(ib_bar.open), tick_size),
+        high=round_with_quantum(Decimal(ib_bar.high), tick_size),
+        low=round_with_quantum(Decimal(ib_bar.low), tick_size),
+        close=round_with_quantum(Decimal(ib_bar.close), tick_size),
+        volume=int(ib_bar.volume) * volume_multiplier,
+        timestamp=timestamp_from_ib(ib_bar.date),
     )
 
 
@@ -76,21 +76,18 @@ def get_instrument_type_by_exchange(exchange: Exchange) -> InstrumentType:
 
 
 def get_nearest_trading_range(trading_hours: str, tz_id: str) -> Range:
-    nearest_range = Range(from_t=0, to_t=0)
+    min_dt = pytz.utc.localize(datetime.min)
+    nearest_range = Range(from_dt=min_dt, to_dt=min_dt)
     session_tz = pytz.timezone(tz_id)
+
     for ib_session in trading_hours.split(';'):
         if ib_session and not 'CLOSED' in ib_session:
             ib_open, ib_close = tuple(ib_session.split('-'))
             open = session_tz.localize(datetime.strptime(ib_open, '%Y%m%d:%H%M'))
             close = session_tz.localize(datetime.strptime(ib_close, '%Y%m%d:%H%M'))
             if close > datetime.now(pytz.utc):
-                nearest_range.from_t = int(open.timestamp())
-                nearest_range.to_t = int(close.timestamp())
+                nearest_range.from_dt = open
+                nearest_range.to_dt = close
                 break
-
-    if not nearest_range.from_t or not nearest_range.to_t:
-        raise ValueError(
-            f'Cannot get nearest trading range from trading hours {trading_hours}'
-        )
 
     return nearest_range

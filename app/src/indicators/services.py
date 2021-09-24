@@ -13,6 +13,7 @@ async def get_indicator(ticker: str, length: int) -> Indicator:
     instrument = await instrument_services.get_instrument(ticker)
     bar_set = await bar_services.get_bar_set(instrument, Timeframe.DAY)
     indicator = await Indicator.objects.get_or_create(bar_set=bar_set, length=length)
+    await indicator.load()  # TODO: Remove after switching to SQLAlchemy 2.0
 
     now = datetime.now(pytz.utc)
     if indicator.valid_until <= now:
@@ -20,13 +21,14 @@ async def get_indicator(ticker: str, length: int) -> Indicator:
         if await instrument_services.is_session_open(instrument):
             to_dt -= timedelta(days=1)
         from_dt = to_dt - timedelta(days=30)  # TODO Better approach
-        range = Range(from_t=int(from_dt.timestamp()), to_t=int(to_dt.timestamp()))
+        range = Range(from_dt=from_dt, to_dt=to_dt)
 
         bars = await bar_services.get_bars(bar_set, range)
         session = await instrument_services.get_session(instrument)
 
         indicator.atr = _calculate_atr(bars, length)
-        indicator.valid_until = datetime.fromtimestamp(session.close_t, pytz.utc)
+        indicator.valid_until = session.close_dt
+        await indicator.update(['atr', 'valid_until'])
 
     return indicator
 
@@ -35,12 +37,12 @@ def _calculate_atr(bars: list[Bar], length: int) -> Decimal:
     atr = Decimal('0.0')
 
     if 0 < length < len(bars):
-        source_bars = sorted(bars, key=lambda bar: bar.t, reverse=True)
+        source_bars = sorted(bars, key=lambda bar: bar.timestamp, reverse=True)
         true_ranges = []
         for index, bar in enumerate(source_bars[: length - 1]):
-            true_range_option1 = bar.h - bar.l
-            true_range_option2 = abs(bar.h - source_bars[index + 1].c)
-            true_range_option3 = abs(bar.l - source_bars[index + 1].c)
+            true_range_option1 = bar.high - bar.low
+            true_range_option2 = abs(bar.high - source_bars[index + 1].close)
+            true_range_option3 = abs(bar.low - source_bars[index + 1].close)
             true_range = max(true_range_option1, true_range_option2, true_range_option3)
             true_ranges.append(true_range)
 

@@ -3,14 +3,5 @@ from datetime import datetime
 
 
 class Range(BaseModel):
-    from_t: int
-    to_t: int
-
-    def __str__(self):
-        return (
-            f'from_t={self.from_t}({datetime.fromtimestamp(self.from_t)}) '
-            f'to_t={self.to_t}({datetime.fromtimestamp(self.to_t)})'
-        )
-
-    def __repr__(self):
-        return self.__str__()
+    from_dt: datetime
+    to_dt: datetime

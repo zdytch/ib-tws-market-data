@@ -3,10 +3,8 @@ from instruments.models import Exchange, InstrumentType
 from bars.models import Bar, BarSet
 from .schemas import InstrumentInfo
 from common.schemas import Range
-from datetime import datetime
 from decimal import Decimal
 from . import utils
-import pytz
 from loguru import logger
 
 
@@ -57,13 +55,11 @@ class IBConnector:
         contract = await self._get_contract(instrument.symbol, instrument.exchange)
         is_stock = instrument.type == InstrumentType.STOCK
         volume_multiplier = 100 if is_stock else 1
-        from_dt = datetime.fromtimestamp(range.from_t, pytz.utc)
-        to_dt = datetime.fromtimestamp(range.to_t, pytz.utc)
 
         ib_bars = await self._ib.reqHistoricalDataAsync(
             contract=contract,
-            endDateTime=to_dt,
-            durationStr=utils.duration_to_ib(from_dt, to_dt),
+            endDateTime=range.to_dt,
+            durationStr=utils.duration_to_ib(range.from_dt, range.to_dt),
             barSizeSetting=utils.timeframe_to_ib(bar_set.timeframe),
             whatToShow='TRADES',
             useRTH=is_stock,
@@ -74,7 +70,7 @@ class IBConnector:
         bars = []
         for ib_bar in ib_bars:
             bar = utils.bar_from_ib(ib_bar, instrument.tick_size, volume_multiplier)
-            if int(from_dt.timestamp()) <= bar.t <= int(to_dt.timestamp()):
+            if range.from_dt <= bar.timestamp <= range.to_dt:
                 bar.bar_set = bar_set
                 bars.append(bar)
 

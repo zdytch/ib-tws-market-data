@@ -5,7 +5,9 @@ from common.schemas import Range
 from . import crud
 from . import utils
 from ib.connector import ib_connector
+from datetime import datetime, timedelta
 from loguru import logger
+import pytz
 import math
 
 
@@ -29,9 +31,9 @@ async def get_bars(bar_set: BarSet, range: Range) -> list[Bar]:
 
         # If missing range doesn't overlap with open session range
         if not is_overlap_session:
-            # Extend missing range by (1 day + 1 sec) to overlap possible gaps in db
-            missing_range.from_t -= 86401
-            missing_range.to_t += 86401
+            # Extend missing range to overlap possible gaps in db
+            missing_range.from_dt -= timedelta(days=1, seconds=1)
+            missing_range.to_dt += timedelta(days=1, seconds=1)
 
         logger.debug(
             f'Missing bars in range. Retreiving from origin... '
@@ -61,8 +63,9 @@ async def get_bars(bar_set: BarSet, range: Range) -> list[Bar]:
     return bars
 
 
-async def get_latest_timestamp(bar_set: BarSet) -> int:
-    return await Bar.objects.filter(bar_set=bar_set).max('t') or 0
+async def get_latest_timestamp(bar_set: BarSet) -> datetime:
+    latest_ts = await Bar.objects.filter(bar_set=bar_set).max('timestamp')
+    return latest_ts or pytz.utc.localize(datetime.min)
 
 
 async def _get_bars_from_origin(bar_set: BarSet, range: Range) -> list[Bar]:
@@ -87,17 +90,17 @@ def _calculate_missing_ranges(
     within_range: Range, existing_ranges: list[BarRange]
 ) -> list[Range]:
     missing_ranges = []
-    next_from_t = within_range.from_t
+    next_from_dt = within_range.from_dt
 
     for range in existing_ranges:
-        if range.to_t > within_range.from_t and range.from_t < within_range.to_t:
-            if range.from_t > next_from_t < within_range.to_t:
-                missing_ranges.append(Range(from_t=next_from_t, to_t=range.from_t))
+        if range.to_dt > within_range.from_dt and range.from_dt < within_range.to_dt:
+            if range.from_dt > next_from_dt < within_range.to_dt:
+                missing_ranges.append(Range(from_dt=next_from_dt, to_dt=range.from_dt))
 
-            next_from_t = range.to_t
+            next_from_dt = range.to_dt
 
-    if next_from_t < within_range.to_t:
-        missing_ranges.append(Range(from_t=next_from_t, to_t=within_range.to_t))
+    if next_from_dt < within_range.to_dt:
+        missing_ranges.append(Range(from_dt=next_from_dt, to_dt=within_range.to_dt))
 
     return missing_ranges
 
@@ -109,17 +112,19 @@ def _split_ranges(
     step_size = utils.get_step_size(timeframe)
 
     for range_to_split in ranges:
-        bar_count = math.ceil((range_to_split.to_t - range_to_split.from_t) / step_size)
+        bar_count = math.ceil(
+            (range_to_split.to_dt - range_to_split.from_dt) / step_size
+        )
         part_count = math.ceil(bar_count / length)
 
-        to_t = range_to_split.to_t
+        to_dt = range_to_split.to_dt
         for _ in range(part_count):
-            from_t = to_t - length * step_size
-            if from_t < range_to_split.from_t:
-                from_t = range_to_split.from_t
+            from_dt = to_dt - length * step_size
+            if from_dt < range_to_split.from_dt:
+                from_dt = range_to_split.from_dt
 
-            splitted_range = Range(from_t=from_t, to_t=to_t)
+            splitted_range = Range(from_dt=from_dt, to_dt=to_dt)
             splitted_ranges.append(splitted_range)
-            to_t = from_t - step_size
+            to_dt = from_dt - step_size
 
     return splitted_ranges

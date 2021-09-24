@@ -31,25 +31,16 @@ class BarSet(ormar.Model):
 class Bar(ormar.Model):
     id: int = ormar.Integer(primary_key=True)  # type: ignore
     bar_set: BarSet = ormar.ForeignKey(BarSet, related_name='bars', ondelete='CASCADE')
-    o: Decimal = ormar.Decimal(max_digits=18, decimal_places=8)  # type: ignore
-    h: Decimal = ormar.Decimal(max_digits=18, decimal_places=8)  # type: ignore
-    l: Decimal = ormar.Decimal(max_digits=18, decimal_places=8)  # type: ignore
-    c: Decimal = ormar.Decimal(max_digits=18, decimal_places=8)  # type: ignore
-    v: int = ormar.Integer(minimum=0, default=0)  # type: ignore
-    t: int = ormar.Integer(minimum=0, default=0)  # type: ignore
+    open: Decimal = ormar.Decimal(max_digits=18, decimal_places=8)  # type: ignore
+    high: Decimal = ormar.Decimal(max_digits=18, decimal_places=8)  # type: ignore
+    low: Decimal = ormar.Decimal(max_digits=18, decimal_places=8)  # type: ignore
+    close: Decimal = ormar.Decimal(max_digits=18, decimal_places=8)  # type: ignore
+    volume: int = ormar.Integer(minimum=0)  # type: ignore
+    timestamp: datetime = ormar.DateTime(timezone=True)  # type: ignore
 
     class Meta(BaseMeta):
-        constraints = [ormar.UniqueColumns('bar_set', 't')]
-        orders_by = ['t']
-
-    def __str__(self):
-        return (
-            f'o={self.o} h={self.h} l={self.l} c={self.c} v={self.v} '
-            f't={self.t}({datetime.fromtimestamp(self.t)})'
-        )
-
-    def __repr__(self):
-        return self.__str__()
+        constraints = [ormar.UniqueColumns('bar_set', 'timestamp')]
+        orders_by = ['timestamp']
 
 
 class BarRange(ormar.Model):
@@ -57,17 +48,8 @@ class BarRange(ormar.Model):
     bar_set: BarSet = ormar.ForeignKey(
         BarSet, related_name='ranges', ondelete='CASCADE'
     )
-    from_t: int = ormar.Integer(minimum=0, default=0)  # type: ignore
-    to_t: int = ormar.Integer(minimum=0, default=0)  # type: ignore
+    from_dt: datetime = ormar.DateTime(timezone=True)  # type: ignore
+    to_dt: datetime = ormar.DateTime(timezone=True)  # type: ignore
 
     class Meta(BaseMeta):
-        orders_by = ['from_t']
-
-    def __str__(self):
-        return (
-            f'from_t={self.from_t}({datetime.fromtimestamp(self.from_t)}) '
-            f'to_t={self.to_t}({datetime.fromtimestamp(self.to_t)})'
-        )
-
-    def __repr__(self):
-        return self.__str__()
+        orders_by = ['from_dt']

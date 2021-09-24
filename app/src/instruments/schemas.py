@@ -20,5 +20,5 @@ class InstrumentList(InstrumentGet):
 
 
 class SessionGet(BaseModel):
-    open_t: int
-    close_t: int
+    open_dt: int
+    close_dt: int
