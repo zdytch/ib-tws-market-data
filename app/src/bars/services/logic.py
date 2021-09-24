@@ -5,8 +5,9 @@ from common.schemas import Range
 from . import crud
 from . import utils
 from ib.connector import ib_connector
-from datetime import timedelta
+from datetime import datetime, timedelta
 from loguru import logger
+import pytz
 import math
 
 
@@ -63,7 +64,8 @@ async def get_bars(bar_set: BarSet, range: Range) -> list[Bar]:
 
 
 async def get_latest_timestamp(bar_set: BarSet) -> datetime:
-    return await Bar.objects.filter(bar_set=bar_set).max('timestamp')
+    latest = await Bar.objects.filter(bar_set=bar_set).max('timestamp')
+    return latest or pytz.utc.localize(datetime.min)
 
 
 async def _get_bars_from_origin(bar_set: BarSet, range: Range) -> list[Bar]:
