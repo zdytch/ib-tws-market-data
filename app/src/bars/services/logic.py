@@ -40,21 +40,17 @@ async def get_bars(bar_set: BarSet, range: Range) -> list[Bar]:
             f'{instrument.exchange}:{instrument.symbol}, {bar_set.timeframe}, {missing_range}'
         )
 
-        try:
-            origin_bars = await _get_bars_from_origin(bar_set, missing_range)
+        origin_bars = await _get_bars_from_origin(bar_set, missing_range)
 
-            if (
-                is_overlap_session
-                and origin_bars
-                and await get_latest_timestamp(bar_set) < origin_bars[-1].timestamp
-            ):
-                live_bar = origin_bars[-1]
-                origin_bars.remove(live_bar)
+        if (
+            is_overlap_session
+            and origin_bars
+            and await get_latest_timestamp(bar_set) < origin_bars[-1].timestamp
+        ):
+            live_bar = origin_bars[-1]
+            origin_bars.remove(live_bar)
 
-            await crud.add_bars(bar_set, origin_bars)
-
-        except Exception as e:
-            logger.debug(e)
+        await crud.add_bars(bar_set, origin_bars)
 
     bars = await crud.get_bars(bar_set, range)
     if live_bar:

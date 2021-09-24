@@ -12,7 +12,7 @@ import pytz
 async def get_history(ticker: str, timeframe: str, from_t: int, to_t: int) -> History:
     history = History()
     bars = []
-    latest_t = 0
+    next_time = 0
 
     try:
         instrument = await instrument_services.get_instrument(ticker)
@@ -21,10 +21,12 @@ async def get_history(ticker: str, timeframe: str, from_t: int, to_t: int) -> Hi
         from_dt = datetime.fromtimestamp(from_t, pytz.utc)
         to_dt = datetime.fromtimestamp(to_t, pytz.utc)
         range = Range(from_dt=from_dt, to_dt=to_dt)
-
         bars = await bar_services.get_bars(bar_set, range)
-        latest_t = await bar_services.get_latest_timestamp(bar_set)
-    except Exception as error:
+
+        latest_ts = await bar_services.get_latest_timestamp(bar_set)
+        next_time = int(latest_ts.timestamp())
+
+    except ConnectionRefusedError as error:
         logger.error(error)
 
     for bar in bars:
@@ -37,8 +39,8 @@ async def get_history(ticker: str, timeframe: str, from_t: int, to_t: int) -> Hi
 
     if bars:
         history.s = 'ok'
-    else:
-        history.nextTime = int(latest_t.timestamp())
+    elif next_time:
+        history.nextTime = next_time
 
     return history
 
@@ -61,7 +63,8 @@ async def get_info(ticker: str) -> Info:
         info.timezone = timezone
         info.minmov = min_movement
         info.pricescale = price_scale
-    except Exception as error:
+
+    except ConnectionRefusedError as error:
         logger.error(error)
 
     return info
