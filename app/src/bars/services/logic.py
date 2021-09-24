@@ -46,7 +46,7 @@ async def get_bars(bar_set: BarSet, range: Range) -> list[Bar]:
             if (
                 is_overlap_session
                 and origin_bars
-                and await get_latest_timestamp(bar_set) < origin_bars[-1].t
+                and await get_latest_timestamp(bar_set) < origin_bars[-1].timestamp
             ):
                 live_bar = origin_bars[-1]
                 origin_bars.remove(live_bar)
