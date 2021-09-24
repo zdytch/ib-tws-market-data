@@ -31,35 +31,31 @@ async def get_bars(bar_set: BarSet, range: Range) -> list[Bar]:
 async def _perform_range_defragmentation(bar_set: BarSet) -> None:
     ranges = await BarRange.objects.filter(bar_set=bar_set).all()
     step_size = utils.get_step_size(bar_set.timeframe)
+    ranges_to_delete = []
 
-    is_updated = False
-    for range in ranges:
-        for next_range in ranges:
+    for range_a in ranges:
+        for range_b in ranges:
             if (
-                range.from_dt
-                and range.to_dt
-                and next_range.from_dt
-                and next_range.to_dt
-                and next_range is not range
+                range_a is not range_b
+                and range_a not in ranges_to_delete
+                and range_b not in ranges_to_delete
                 and (
-                    range.from_dt - step_size
-                    <= next_range.from_dt
-                    <= range.to_dt + step_size
-                    or range.from_dt - step_size
-                    <= next_range.to_dt
-                    <= range.to_dt + step_size
+                    range_a.from_dt - step_size
+                    <= range_b.from_dt
+                    <= range_a.to_dt + step_size
+                    or range_a.from_dt - step_size
+                    <= range_b.to_dt
+                    <= range_a.to_dt + step_size
                 )
             ):
-                range.from_dt = min((next_range.from_dt, range.from_dt))
-                range.to_dt = max((next_range.to_dt, range.to_dt))
-                next_range.from_dt = datetime.min
-                next_range.to_dt = datetime.min
-                is_updated = True
+                range_a.from_dt = min(range_a.from_dt, range_b.from_dt)
+                range_a.to_dt = max(range_a.to_dt, range_b.to_dt)
+                ranges_to_delete.append(range_b)
 
-    if is_updated:
+    if ranges_to_delete:
         async with BarRange.Meta.database.transaction():
             for range in ranges:
-                if range.from_dt and range.to_dt:
-                    await range.update(['from_dt', 'to_dt'])
-                else:
+                if range in ranges_to_delete:
                     await range.delete()
+                else:
+                    await range.update(['from_dt', 'to_dt'])
