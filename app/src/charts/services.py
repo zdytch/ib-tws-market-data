@@ -38,7 +38,7 @@ async def get_history(ticker: str, timeframe: str, from_t: int, to_t: int) -> Hi
     if bars:
         history.s = 'ok'
     elif latest_t:
-        history.nextTime = latest_t
+        history.nextTime = int(latest_t.timestamp())
 
     return history
 
