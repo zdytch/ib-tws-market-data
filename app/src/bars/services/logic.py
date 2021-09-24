@@ -62,8 +62,8 @@ async def get_bars(bar_set: BarSet, range: Range) -> list[Bar]:
     return bars
 
 
-async def get_latest_timestamp(bar_set: BarSet) -> int:
-    return await Bar.objects.filter(bar_set=bar_set).max('t') or 0
+async def get_latest_timestamp(bar_set: BarSet) -> datetime:
+    return await Bar.objects.filter(bar_set=bar_set).max('timestamp')
 
 
 async def _get_bars_from_origin(bar_set: BarSet, range: Range) -> list[Bar]:
