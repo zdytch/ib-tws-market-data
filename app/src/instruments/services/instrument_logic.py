@@ -40,6 +40,7 @@ async def get_instrument_list(
 
 async def get_session(instrument: Instrument) -> TradingSession:
     session = await TradingSession.objects.get_or_create(instrument=instrument)
+    await session.load()  # TODO: Remove after switching to SQLAlchemy 2.0
 
     if not _is_session_up_to_date(session):
         info = await ib_connector.get_instrument_info(
