@@ -76,7 +76,8 @@ def get_instrument_type_by_exchange(exchange: Exchange) -> InstrumentType:
 
 
 def get_nearest_trading_range(trading_hours: str, tz_id: str) -> Range:
-    nearest_range = Range(from_dt=datetime.min, to_dt=datetime.min)
+    min_dt = pytz.utc.localize(datetime.min)
+    nearest_range = Range(from_dt=min_dt, to_dt=min_dt)
     session_tz = pytz.timezone(tz_id)
 
     for ib_session in trading_hours.split(';'):
