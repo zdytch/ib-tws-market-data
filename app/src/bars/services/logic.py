@@ -64,8 +64,8 @@ async def get_bars(bar_set: BarSet, range: Range) -> list[Bar]:
 
 
 async def get_latest_timestamp(bar_set: BarSet) -> datetime:
-    latest = await Bar.objects.filter(bar_set=bar_set).max('timestamp')
-    return latest or pytz.utc.localize(datetime.min)
+    latest_ts = await Bar.objects.filter(bar_set=bar_set).max('timestamp')
+    return latest_ts or pytz.utc.localize(datetime.min)
 
 
 async def _get_bars_from_origin(bar_set: BarSet, range: Range) -> list[Bar]:
