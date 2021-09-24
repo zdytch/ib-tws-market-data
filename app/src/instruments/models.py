@@ -41,8 +41,8 @@ class TradingSession(ormar.Model):
     instrument: Instrument = ormar.ForeignKey(
         Instrument, related_name='session', unique=True, ondelete='CASCADE'
     )
-    open_dt: datetime = ormar.DateTime(timezone=True)  # type: ignore
-    close_dt: datetime = ormar.DateTime(timezone=True)  # type: ignore
+    open_dt: datetime = ormar.DateTime(timezone=True, default=datetime.now)  # type: ignore
+    close_dt: datetime = ormar.DateTime(timezone=True, default=datetime.now)  # type: ignore
 
     class Meta(BaseMeta):
         pass
