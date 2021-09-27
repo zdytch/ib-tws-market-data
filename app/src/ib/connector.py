@@ -76,6 +76,28 @@ class IBConnector:
 
         return bars
 
+    async def search_tickers(self, symbol: str) -> list[str]:
+        await self._connect()
+        tickers = []
+
+        if symbol:
+            for type in tuple(InstrumentType):
+                contract = Contract(symbol=symbol, currency='USD', secType=type.value)
+                details = await self._ib.reqContractDetailsAsync(contract)
+                for detail in details:
+                    if detail.contract:
+                        symbol = detail.contract.symbol
+                        exchange = (
+                            detail.contract.primaryExchange
+                            if type == InstrumentType.STOCK
+                            else detail.contract.exchange
+                        )
+                        ticker = f'{exchange}:{symbol}'
+                        if exchange in tuple(Exchange) and ticker not in tickers:
+                            tickers.append(f'{exchange}:{symbol}')
+
+        return tickers
+
     async def _connect(self, client_id=14):
         if not self.is_connected:
             await self._ib.connectAsync('trixter-ib', 4002, client_id)
