@@ -79,27 +79,26 @@ class IBConnector:
 
         return bars
 
-    async def search_tickers(self, symbol: str) -> list[str]:
+    async def search_instrument_info(self, symbol: str) -> list[InstrumentInfo]:
         await self._connect()
-        tickers = []
 
+        results = []
         if symbol:
             for type in tuple(InstrumentType):
                 contract = self._get_contract(symbol, instrument_type=type)
                 details = await self._ib.reqContractDetailsAsync(contract)
-                for detail in details:
-                    if detail.contract:
-                        symbol = detail.contract.symbol
-                        exchange = (
-                            detail.contract.primaryExchange
-                            if type == InstrumentType.STOCK
-                            else detail.contract.exchange
-                        )
-                        ticker = f'{exchange}:{symbol}'
-                        if exchange in tuple(Exchange) and ticker not in tickers:
-                            tickers.append(f'{exchange}:{symbol}')
+                for item in details:
+                    if item.contract:
+                        symbol = item.contract.symbol
+                        exchange = item.contract.exchange
 
-        return tickers
+                        if exchange in tuple(Exchange):
+                            instrument_info = await self.get_instrument_info(
+                                symbol, Exchange(exchange)
+                            )
+                            results.append(instrument_info)
+
+        return results
 
     async def _connect(self, client_id=14):
         if not self.is_connected:
@@ -112,7 +111,7 @@ class IBConnector:
         instrument_type: Optional[InstrumentType] = None,
     ) -> Contract:
         sec_type = utils.security_type_to_ib(exchange, instrument_type)
-        exch = exchange or ''
+        exch = f'{exchange}' if exchange else ''
         contract = Contract(
             symbol=symbol, exchange=exch, secType=sec_type, currency='USD'
         )
