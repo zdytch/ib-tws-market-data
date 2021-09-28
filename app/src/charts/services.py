@@ -1,4 +1,4 @@
-from .schemas import History, Info, Config
+from .schemas import History, Info, SearchResult, Config
 from bars.models import Timeframe
 from common.schemas import Range
 from bars import services as bar_services
@@ -68,6 +68,25 @@ async def get_info(ticker: str) -> Info:
         logger.error(error)
 
     return info
+
+
+async def get_search_results(search: str) -> list[SearchResult]:
+    results = []
+    instruments = await instrument_services.search_instruments(search)
+
+    for instrument in instruments:
+        ticker = f'{instrument.exchange}:{instrument.symbol}'
+        result = SearchResult(
+            symbol=ticker,
+            full_name=ticker,
+            ticker=ticker,
+            description=instrument.description,
+            exchange=instrument.exchange,
+            type=_instrument_type_to_chart(instrument.type),
+        )
+        results.append(result)
+
+    return results
 
 
 def get_config() -> Config:

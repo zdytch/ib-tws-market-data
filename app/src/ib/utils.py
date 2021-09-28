@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Optional
 from ib_insync import BarData
 from instruments.models import Exchange, InstrumentType
 from bars.models import Bar, Timeframe
@@ -73,6 +73,24 @@ def get_instrument_type_by_exchange(exchange: Exchange) -> InstrumentType:
         raise ValueError(f'Cannot get instrument type, exchange unknown: {exchange}')
 
     return instrument_type
+
+
+def security_type_to_ib(
+    exchange: Optional[Exchange], instrument_type: Optional[InstrumentType]
+) -> str:
+    if exchange and not instrument_type:
+        instrument_type = get_instrument_type_by_exchange(exchange)
+
+    if instrument_type == InstrumentType.STOCK:
+        sec_type = 'STK'
+    elif instrument_type == InstrumentType.FUTURE:
+        sec_type = 'CONTFUT'
+    else:
+        raise ValueError(
+            f'Cannot get security type, instrument type unknown: {instrument_type}'
+        )
+
+    return sec_type
 
 
 def get_nearest_trading_range(trading_hours: str, tz_id: str) -> Range:

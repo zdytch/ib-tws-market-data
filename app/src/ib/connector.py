@@ -1,4 +1,5 @@
-from ib_insync import IB, Contract, Stock, ContFuture
+from typing import Optional
+from ib_insync import IB, Contract
 from instruments.models import Exchange, InstrumentType
 from bars.models import Bar, BarSet
 from .schemas import InstrumentInfo
@@ -22,7 +23,9 @@ class IBConnector:
     ) -> InstrumentInfo:
         await self._connect()
 
-        contract = await self._get_contract(symbol, exchange)
+        contract = self._get_contract(symbol, exchange)
+        await self._ib.qualifyContractsAsync(contract)
+
         type = utils.get_instrument_type_by_exchange(exchange)
         is_stock = type == InstrumentType.STOCK
         details = await self._ib.reqContractDetailsAsync(contract)
@@ -52,7 +55,7 @@ class IBConnector:
         await self._connect()
 
         instrument = bar_set.instrument
-        contract = await self._get_contract(instrument.symbol, instrument.exchange)
+        contract = self._get_contract(instrument.symbol, instrument.exchange)
         is_stock = instrument.type == InstrumentType.STOCK
         volume_multiplier = 100 if is_stock else 1
 
@@ -76,26 +79,42 @@ class IBConnector:
 
         return bars
 
+    async def search_instrument_info(self, symbol: str) -> list[InstrumentInfo]:
+        await self._connect()
+
+        results = []
+        if symbol:
+            for type in tuple(InstrumentType):
+                contract = self._get_contract(symbol, instrument_type=type)
+                details = await self._ib.reqContractDetailsAsync(contract)
+                for item in details:
+                    if item.contract:
+                        symbol = item.contract.symbol
+                        exchange = item.contract.exchange
+
+                        if exchange in tuple(Exchange):
+                            instrument_info = await self.get_instrument_info(
+                                symbol, Exchange(exchange)
+                            )
+                            results.append(instrument_info)
+
+        return results
+
     async def _connect(self, client_id=14):
         if not self.is_connected:
             await self._ib.connectAsync('trixter-ib', 4002, client_id)
 
-    async def _get_contract(self, symbol: str, exchange: Exchange) -> Contract:
-        type = utils.get_instrument_type_by_exchange(exchange)
-        if type == InstrumentType.STOCK:
-            contract = Stock(symbol, f'SMART:{exchange}', 'USD')
-        elif type == InstrumentType.FUTURE:
-            contract = ContFuture(symbol, f'SMART:{exchange}', currency='USD')
-        else:
-            raise ValueError(
-                f'Cannot get contract for type {type}, '
-                f'symbol {symbol}, exchange {exchange}'
-            )
-
-        if contract:
-            await self._ib.qualifyContractsAsync(contract)
-            if not contract.conId:
-                raise ValueError(f'Cannot qualify contract {contract}')
+    def _get_contract(
+        self,
+        symbol: str,
+        exchange: Optional[Exchange] = None,
+        instrument_type: Optional[InstrumentType] = None,
+    ) -> Contract:
+        sec_type = utils.security_type_to_ib(exchange, instrument_type)
+        exch = f'{exchange}' if exchange else ''
+        contract = Contract(
+            symbol=symbol, exchange=exch, secType=sec_type, currency='USD'
+        )
 
         return contract
 
