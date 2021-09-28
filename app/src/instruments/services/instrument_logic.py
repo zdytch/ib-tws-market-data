@@ -38,6 +38,24 @@ async def get_instrument_list(
     return await instruments.all()
 
 
+async def search_instruments(symbol: str) -> list[Instrument]:
+    instruments = []
+    infos = await ib_connector.search_instrument_info(symbol)
+
+    for info in infos:
+        instrument = Instrument(
+            symbol=info.symbol,
+            exchange=info.exchange,
+            type=info.type,
+            description=info.description,
+            tick_size=info.tick_size,
+            multiplier=info.multiplier,
+        )
+        instruments.append(instrument)
+
+    return instruments
+
+
 async def get_session(instrument: Instrument) -> TradingSession:
     session = await TradingSession.objects.get_or_create(instrument=instrument)
     await session.load()  # TODO: Remove after switching to SQLAlchemy 2.0

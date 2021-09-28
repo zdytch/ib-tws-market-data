@@ -72,7 +72,7 @@ async def get_info(ticker: str) -> Info:
 
 async def get_search_results(search: str) -> list[SearchResult]:
     results = []
-    instruments = await instrument_services.get_instrument_list(search)
+    instruments = await instrument_services.search_instruments(search)
 
     for instrument in instruments:
         ticker = f'{instrument.exchange}:{instrument.symbol}'
