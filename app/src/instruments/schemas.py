@@ -1,6 +1,7 @@
 from typing import Optional
 from pydantic import BaseModel
 from .models import InstrumentType
+from datetime import datetime
 from decimal import Decimal
 
 
@@ -20,5 +21,5 @@ class InstrumentList(InstrumentGet):
 
 
 class SessionGet(BaseModel):
-    open_dt: int
-    close_dt: int
+    open_dt: datetime
+    close_dt: datetime
