@@ -29,11 +29,11 @@ class IBConnector:
 
         type = utils.get_instrument_type_by_exchange(exchange)
         is_stock = type == InstrumentType.STOCK
-        _, _, spec_description = self._get_special_case_instrument_values(
+        _, _, tr_description = self._get_special_case_translated_values(
             symbol, exchange, type
         )
 
-        description = spec_description or details[0].longName
+        description = tr_description or details[0].longName
         tick_size = Decimal('0.01') if is_stock else Decimal(str(details[0].minTick))
         multiplier = Decimal('1.00') if is_stock else Decimal(contract.multiplier)
         trading_hours = details[0].liquidHours if is_stock else details[0].tradingHours
@@ -113,13 +113,13 @@ class IBConnector:
         exchange: Optional[Exchange] = None,
         instrument_type: Optional[InstrumentType] = None,
     ) -> Contract:
-        spec_symbol, spec_multiplier, _ = self._get_special_case_instrument_values(
+        tr_symbol, tr_multiplier, _ = self._get_special_case_translated_values(
             symbol, exchange, instrument_type
         )
-        contract_symbol = spec_symbol or symbol
+        contract_symbol = tr_symbol or symbol
         contract_exchange = f'{exchange}' if exchange else ''
         contract_type = utils.security_type_to_ib(exchange, instrument_type)
-        contract_multiplier = spec_multiplier or ''
+        contract_multiplier = tr_multiplier or ''
 
         return Contract(
             symbol=contract_symbol,
@@ -134,24 +134,24 @@ class IBConnector:
     ) -> None:
         logger.debug(f'{req_id} {error_code} {error_string} {contract}')
 
-    def _get_special_case_instrument_values(
+    def _get_special_case_translated_values(
         self,
         symbol: str,
         exchange: Optional[Exchange] = None,
         instrument_type: Optional[InstrumentType] = None,
     ) -> tuple:
-        s_symbol = ''
-        s_multiplier = ''
-        s_description = ''
+        translated_symbol = ''
+        translated_multiplier = ''
+        translated_description = ''
 
         if symbol == 'SIL' and (
             exchange == Exchange.NYMEX or instrument_type == InstrumentType.FUTURE
         ):
-            s_symbol = 'SI'
-            s_multiplier = '1000'
-            s_description = 'Silver Micro Futures'
+            translated_symbol = 'SI'
+            translated_multiplier = '1000'
+            translated_description = 'Silver Micro Futures'
 
-        return s_symbol, s_multiplier, s_description
+        return translated_symbol, translated_multiplier, translated_description
 
 
 ib_connector = IBConnector()
