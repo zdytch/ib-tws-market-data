@@ -25,11 +25,15 @@ class IBConnector:
 
         contract = self._get_contract(symbol, exchange)
         await self._ib.qualifyContractsAsync(contract)
+        details = await self._ib.reqContractDetailsAsync(contract)
 
         type = utils.get_instrument_type_by_exchange(exchange)
         is_stock = type == InstrumentType.STOCK
-        details = await self._ib.reqContractDetailsAsync(contract)
-        description = details[0].longName
+        _, _, spec_description = self._get_special_case_instrument_values(
+            symbol, exchange, type
+        )
+
+        description = spec_description or details[0].longName
         tick_size = Decimal('0.01') if is_stock else Decimal(str(details[0].minTick))
         multiplier = Decimal('1.00') if is_stock else Decimal(contract.multiplier)
         trading_hours = details[0].liquidHours if is_stock else details[0].tradingHours
@@ -109,31 +113,45 @@ class IBConnector:
         exchange: Optional[Exchange] = None,
         instrument_type: Optional[InstrumentType] = None,
     ) -> Contract:
-        sym = symbol
-        sec_type = utils.security_type_to_ib(exchange, instrument_type)
-        exch = f'{exchange}' if exchange else ''
-        multiplier = ''
+        spec_symbol, spec_multiplier, _ = self._get_special_case_instrument_values(
+            symbol, exchange, instrument_type
+        )
+        contract_symbol = spec_symbol or symbol
+        contract_exchange = f'{exchange}' if exchange else ''
+        contract_type = utils.security_type_to_ib(exchange, instrument_type)
+        contract_multiplier = spec_multiplier or ''
 
-        if symbol == 'SIL' and (
-            exchange == Exchange.NYMEX or instrument_type == InstrumentType.FUTURE
-        ):
-            sym = 'SI'
-            multiplier = '1000'
-
-        contract = Contract(
-            symbol=sym,
-            exchange=exch,
-            secType=sec_type,
-            multiplier=multiplier,
+        return Contract(
+            symbol=contract_symbol,
+            exchange=contract_exchange,
+            secType=contract_type,
+            multiplier=contract_multiplier,
             currency='USD',
         )
-
-        return contract
 
     def _error_callback(
         self, req_id: int, error_code: int, error_string: str, contract: Contract
     ) -> None:
         logger.debug(f'{req_id} {error_code} {error_string} {contract}')
+
+    def _get_special_case_instrument_values(
+        self,
+        symbol: str,
+        exchange: Optional[Exchange] = None,
+        instrument_type: Optional[InstrumentType] = None,
+    ) -> tuple:
+        s_symbol = ''
+        s_multiplier = ''
+        s_description = ''
+
+        if symbol == 'SIL' and (
+            exchange == Exchange.NYMEX or instrument_type == InstrumentType.FUTURE
+        ):
+            s_symbol = 'SI'
+            s_multiplier = '1000'
+            s_description = 'Silver Micro Futures'
+
+        return s_symbol, s_multiplier, s_description
 
 
 ib_connector = IBConnector()
