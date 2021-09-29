@@ -31,7 +31,7 @@ class IBConnector:
         details = await self._ib.reqContractDetailsAsync(contract)
         description = details[0].longName
         tick_size = Decimal('0.01') if is_stock else Decimal(str(details[0].minTick))
-        multiplier = Decimal('1.00') if is_stock else Decimal(str(contract.multiplier))
+        multiplier = Decimal('1.00') if is_stock else Decimal(contract.multiplier)
         trading_hours = details[0].liquidHours if is_stock else details[0].tradingHours
         nearest_trading_range = utils.get_nearest_trading_range(
             trading_hours, details[0].timeZoneId
@@ -87,11 +87,10 @@ class IBConnector:
             for type in tuple(InstrumentType):
                 contract = self._get_contract(symbol, instrument_type=type)
                 details = await self._ib.reqContractDetailsAsync(contract)
+
                 for item in details:
                     if item.contract:
-                        symbol = item.contract.symbol
                         exchange = item.contract.exchange
-
                         if exchange in tuple(Exchange):
                             instrument_info = await self.get_instrument_info(
                                 symbol, Exchange(exchange)
@@ -110,10 +109,23 @@ class IBConnector:
         exchange: Optional[Exchange] = None,
         instrument_type: Optional[InstrumentType] = None,
     ) -> Contract:
+        sym = symbol
         sec_type = utils.security_type_to_ib(exchange, instrument_type)
         exch = f'{exchange}' if exchange else ''
+        multiplier = ''
+
+        if symbol == 'SIL' and (
+            exchange == Exchange.NYMEX or instrument_type == InstrumentType.FUTURE
+        ):
+            sym = 'SI'
+            multiplier = '1000'
+
         contract = Contract(
-            symbol=symbol, exchange=exch, secType=sec_type, currency='USD'
+            symbol=sym,
+            exchange=exch,
+            secType=sec_type,
+            multiplier=multiplier,
+            currency='USD',
         )
 
         return contract
