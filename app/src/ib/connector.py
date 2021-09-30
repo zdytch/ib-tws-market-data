@@ -87,19 +87,22 @@ class IBConnector:
         await self._connect()
 
         results = []
-        if symbol:
-            for type in tuple(InstrumentType):
-                contract = self._get_contract(symbol, instrument_type=type)
-                details = await self._ib.reqContractDetailsAsync(contract)
+        for type in tuple(InstrumentType):
+            contract = self._get_contract(symbol, instrument_type=type)
+            details = await self._ib.reqContractDetailsAsync(contract)
 
-                for item in details:
-                    if item.contract:
-                        exchange = item.contract.exchange
-                        if exchange in tuple(Exchange):
-                            instrument_info = await self.get_instrument_info(
-                                symbol, Exchange(exchange)
-                            )
-                            results.append(instrument_info)
+            for item in details:
+                if item.contract:
+                    exchange = (
+                        item.contract.primaryExchange
+                        if type == InstrumentType.STOCK
+                        else item.contract.exchange
+                    )
+                    if exchange in tuple(Exchange):
+                        instrument_info = await self.get_instrument_info(
+                            symbol, Exchange(exchange)
+                        )
+                        results.append(instrument_info)
 
         return results
 
@@ -117,9 +120,13 @@ class IBConnector:
             symbol, exchange, instrument_type
         )
         contract_symbol = tr_symbol or symbol
-        contract_exchange = f'{exchange}' if exchange else ''
-        contract_type = utils.security_type_to_ib(exchange, instrument_type)
         contract_multiplier = tr_multiplier or ''
+        contract_type = utils.security_type_to_ib(exchange, instrument_type)
+
+        if contract_type == 'STK':
+            contract_exchange = f'SMART:{exchange}' if exchange else 'SMART'
+        else:
+            contract_exchange = f'{exchange}' if exchange else ''
 
         return Contract(
             symbol=contract_symbol,
