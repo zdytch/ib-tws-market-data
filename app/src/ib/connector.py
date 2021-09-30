@@ -29,10 +29,11 @@ class IBConnector:
 
         type = utils.get_instrument_type_by_exchange(exchange)
         is_stock = type == InstrumentType.STOCK
-        _, _, tr_description = self._get_special_case_translated_values(
+        tr_symbol, _, tr_description = self._get_special_case_translated_values(
             symbol, exchange, type
         )
 
+        ib_symbol = tr_symbol or symbol
         description = tr_description or details[0].longName
         tick_size = Decimal('0.01') if is_stock else Decimal(str(details[0].minTick))
         multiplier = Decimal('1.00') if is_stock else Decimal(contract.multiplier)
@@ -43,6 +44,7 @@ class IBConnector:
 
         return InstrumentInfo(
             symbol=symbol,
+            ib_symbol=ib_symbol,
             exchange=exchange,
             type=type,
             description=description,
