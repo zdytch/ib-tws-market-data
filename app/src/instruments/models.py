@@ -22,6 +22,7 @@ class Instrument(ormar.Model):
     id: int = ormar.Integer(primary_key=True)  # type: ignore
     type: InstrumentType = ormar.String(max_length=3, choices=list(InstrumentType))  # type: ignore
     symbol: str = ormar.String(max_length=8)  # type: ignore
+    ib_symbol: str = ormar.String(max_length=8)  # type: ignore
     exchange: Exchange = ormar.String(max_length=8, choices=list(Exchange))  # type: ignore
     description: str = ormar.String(max_length=64)  # type: ignore
     tick_size: Decimal = ormar.Decimal(
