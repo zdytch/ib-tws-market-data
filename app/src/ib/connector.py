@@ -98,7 +98,9 @@ class IBConnector:
                         if type == InstrumentType.STOCK
                         else item.contract.exchange
                     )
-                    if exchange in tuple(Exchange):
+                    if exchange in tuple(Exchange) and not next(
+                        (res for res in results if res.exchange == exchange), None
+                    ):
                         instrument_info = await self.get_instrument_info(
                             symbol, Exchange(exchange)
                         )
