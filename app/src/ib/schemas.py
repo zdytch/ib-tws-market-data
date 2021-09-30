@@ -6,6 +6,7 @@ from decimal import Decimal
 
 class InstrumentInfo(BaseModel):
     symbol: str
+    ib_symbol: str
     exchange: Exchange
     type: InstrumentType
     description: str

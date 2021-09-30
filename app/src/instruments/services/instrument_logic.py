@@ -15,6 +15,7 @@ async def get_instrument(ticker: str) -> Instrument:
         info = await ib_connector.get_instrument_info(symbol, exchange)
         instrument = await Instrument.objects.create(
             symbol=info.symbol,
+            ib_symbol=info.ib_symbol,
             exchange=info.exchange,
             type=info.type,
             description=info.description,
@@ -45,6 +46,7 @@ async def search_instruments(symbol: str) -> list[Instrument]:
     for info in infos:
         instrument = Instrument(
             symbol=info.symbol,
+            ib_symbol=info.ib_symbol,
             exchange=info.exchange,
             type=info.type,
             description=info.description,
