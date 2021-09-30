@@ -25,13 +25,17 @@ class IBConnector:
 
         contract = self._get_contract(symbol, exchange)
         await self._ib.qualifyContractsAsync(contract)
+        details = await self._ib.reqContractDetailsAsync(contract)
 
         type = utils.get_instrument_type_by_exchange(exchange)
         is_stock = type == InstrumentType.STOCK
-        details = await self._ib.reqContractDetailsAsync(contract)
-        description = details[0].longName
+        _, _, tr_description = self._get_special_case_translated_values(
+            symbol, exchange, type
+        )
+
+        description = tr_description or details[0].longName
         tick_size = Decimal('0.01') if is_stock else Decimal(str(details[0].minTick))
-        multiplier = Decimal('1.00') if is_stock else Decimal(str(contract.multiplier))
+        multiplier = Decimal('1.00') if is_stock else Decimal(contract.multiplier)
         trading_hours = details[0].liquidHours if is_stock else details[0].tradingHours
         nearest_trading_range = utils.get_nearest_trading_range(
             trading_hours, details[0].timeZoneId
@@ -83,20 +87,24 @@ class IBConnector:
         await self._connect()
 
         results = []
-        if symbol:
-            for type in tuple(InstrumentType):
-                contract = self._get_contract(symbol, instrument_type=type)
-                details = await self._ib.reqContractDetailsAsync(contract)
-                for item in details:
-                    if item.contract:
-                        symbol = item.contract.symbol
-                        exchange = item.contract.exchange
+        for type in tuple(InstrumentType):
+            contract = self._get_contract(symbol, instrument_type=type)
+            details = await self._ib.reqContractDetailsAsync(contract)
 
-                        if exchange in tuple(Exchange):
-                            instrument_info = await self.get_instrument_info(
-                                symbol, Exchange(exchange)
-                            )
-                            results.append(instrument_info)
+            for item in details:
+                if item.contract:
+                    exchange = (
+                        item.contract.primaryExchange
+                        if type == InstrumentType.STOCK
+                        else item.contract.exchange
+                    )
+                    if exchange in tuple(Exchange) and not next(
+                        (res for res in results if res.exchange == exchange), None
+                    ):
+                        instrument_info = await self.get_instrument_info(
+                            symbol, Exchange(exchange)
+                        )
+                        results.append(instrument_info)
 
         return results
 
@@ -110,18 +118,49 @@ class IBConnector:
         exchange: Optional[Exchange] = None,
         instrument_type: Optional[InstrumentType] = None,
     ) -> Contract:
-        sec_type = utils.security_type_to_ib(exchange, instrument_type)
-        exch = f'{exchange}' if exchange else ''
-        contract = Contract(
-            symbol=symbol, exchange=exch, secType=sec_type, currency='USD'
+        tr_symbol, tr_multiplier, _ = self._get_special_case_translated_values(
+            symbol, exchange, instrument_type
         )
+        contract_symbol = tr_symbol or symbol
+        contract_multiplier = tr_multiplier or ''
+        contract_type = utils.security_type_to_ib(exchange, instrument_type)
 
-        return contract
+        if contract_type == 'STK':
+            contract_exchange = f'SMART:{exchange}' if exchange else 'SMART'
+        else:
+            contract_exchange = f'{exchange}' if exchange else ''
+
+        return Contract(
+            symbol=contract_symbol,
+            exchange=contract_exchange,
+            secType=contract_type,
+            multiplier=contract_multiplier,
+            currency='USD',
+        )
 
     def _error_callback(
         self, req_id: int, error_code: int, error_string: str, contract: Contract
     ) -> None:
         logger.debug(f'{req_id} {error_code} {error_string} {contract}')
+
+    def _get_special_case_translated_values(
+        self,
+        symbol: str,
+        exchange: Optional[Exchange] = None,
+        instrument_type: Optional[InstrumentType] = None,
+    ) -> tuple:
+        translated_symbol = ''
+        translated_multiplier = ''
+        translated_description = ''
+
+        if symbol == 'SIL' and (
+            exchange == Exchange.NYMEX or instrument_type == InstrumentType.FUTURE
+        ):
+            translated_symbol = 'SI'
+            translated_multiplier = '1000'
+            translated_description = 'Silver Micro Futures'
+
+        return translated_symbol, translated_multiplier, translated_description
 
 
 ib_connector = IBConnector()
