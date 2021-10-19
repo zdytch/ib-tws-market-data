@@ -1,6 +1,6 @@
 #Based on example from here https://hub.docker.com/_/python
 
-FROM python:3.9-slim-buster
+FROM python:3.10-slim-buster
 
 EXPOSE 8000
 
