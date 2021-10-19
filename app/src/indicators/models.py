@@ -1,16 +1,22 @@
-import ormar
-from config.db import BaseMeta
-from bars.models import BarSet
-from decimal import Decimal
+from common.models import Base
+from sqlalchemy import (
+    Column,
+    Integer,
+    Numeric,
+    DateTime,
+    ForeignKey,
+    UniqueConstraint,
+)
+from sqlalchemy.orm import relationship
 from datetime import datetime
 
 
-class Indicator(ormar.Model):
-    id: int = ormar.Integer(primary_key=True)  # type: ignore
-    bar_set: BarSet = ormar.ForeignKey(BarSet, skip_reverse=True, ondelete='CASCADE')
-    length: int = ormar.Integer(minimum=1)  # type: ignore
-    atr: Decimal = ormar.Decimal(max_digits=12, decimal_places=4, minimum=0.0, default=0.0)  # type: ignore
-    valid_until: datetime = ormar.DateTime(timezone=True, default=datetime.now)  # type: ignore
+class Indicator(Base):
+    bar_set_id = Column(ForeignKey('barset.id'))
+    length = Column(Integer(), nullable=False)
+    atr = Column(Numeric(), nullable=False)
+    valid_until = Column(DateTime(timezone=True), default=datetime.now, nullable=False)
 
-    class Meta(BaseMeta):
-        constraints = [ormar.UniqueColumns('bar_set', 'length')]
+    bar_set = relationship('BarSet', back_populates='indicators')
+
+    __table_args__ = UniqueConstraint('bar_set_id', 'length')

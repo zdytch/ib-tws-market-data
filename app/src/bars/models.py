@@ -1,9 +1,15 @@
-import ormar
-from config.db import BaseMeta
-from instruments.models import Instrument
+from common.models import Base
+from sqlalchemy import (
+    Column,
+    Integer,
+    Numeric,
+    Enum as EnumField,
+    DateTime,
+    ForeignKey,
+    UniqueConstraint,
+)
+from sqlalchemy.orm import relationship
 from enum import Enum
-from decimal import Decimal
-from datetime import datetime
 
 
 class Timeframe(str, Enum):
@@ -17,39 +23,33 @@ class Timeframe(str, Enum):
     MONTH = 'M'
 
 
-class BarSet(ormar.Model):
-    id: int = ormar.Integer(primary_key=True)  # type: ignore
-    instrument: Instrument = ormar.ForeignKey(
-        Instrument, skip_reverse=True, ondelete='CASCADE'
-    )
-    timeframe: Timeframe = ormar.String(max_length=3, choices=list(Timeframe))  # type: ignore
+class BarSet(Base):
+    instrument_id = Column(ForeignKey('instrument.id'))
+    timeframe = Column(EnumField(Timeframe), nullable=False)
 
-    class Meta(BaseMeta):
-        pass
+    instrument = relationship('Instrument', back_populates='bar_sets')
 
 
-class Bar(ormar.Model):
-    id: int = ormar.Integer(primary_key=True)  # type: ignore
-    bar_set: BarSet = ormar.ForeignKey(BarSet, related_name='bars', ondelete='CASCADE')
-    open: Decimal = ormar.Decimal(max_digits=18, decimal_places=8)  # type: ignore
-    high: Decimal = ormar.Decimal(max_digits=18, decimal_places=8)  # type: ignore
-    low: Decimal = ormar.Decimal(max_digits=18, decimal_places=8)  # type: ignore
-    close: Decimal = ormar.Decimal(max_digits=18, decimal_places=8)  # type: ignore
-    volume: int = ormar.Integer(minimum=0)  # type: ignore
-    timestamp: datetime = ormar.DateTime(timezone=True)  # type: ignore
+class Bar(Base):
+    bar_set_id = Column(ForeignKey('barset.id'))
+    open = Column(Numeric(), nullable=False)
+    high = Column(Numeric(), nullable=False)
+    low = Column(Numeric(), nullable=False)
+    close = Column(Numeric(), nullable=False)
+    volume = Column(Integer(), nullable=False)
+    timestamp = Column(DateTime(timezone=True), nullable=False)
 
-    class Meta(BaseMeta):
-        constraints = [ormar.UniqueColumns('bar_set', 'timestamp')]
-        orders_by = ['timestamp']
+    bar_set = relationship('BarSet', back_populates='bars')
+
+    __table_args__ = UniqueConstraint('bar_set_id', 'timestamp')
+    __mapper_args__ = {'order_by': timestamp}
 
 
-class BarRange(ormar.Model):
-    id: int = ormar.Integer(primary_key=True)  # type: ignore
-    bar_set: BarSet = ormar.ForeignKey(
-        BarSet, related_name='ranges', ondelete='CASCADE'
-    )
-    from_dt: datetime = ormar.DateTime(timezone=True)  # type: ignore
-    to_dt: datetime = ormar.DateTime(timezone=True)  # type: ignore
+class BarRange(Base):
+    bar_set_id = Column(ForeignKey('barset.id'))
+    from_dt = Column(DateTime(timezone=True), nullable=False)
+    to_dt = Column(DateTime(timezone=True), nullable=False)
 
-    class Meta(BaseMeta):
-        orders_by = ['from_dt']
+    bar_set = relationship('BarSet', back_populates='bar_ranges')
+
+    __mapper_args__ = {'order_by': from_dt}
