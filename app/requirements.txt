@@ -1,7 +1,7 @@
 fastapi
 fastapi-pagination
 uvicorn
-ormar
+SQLAlchemy
 asyncpg
 psycopg2-binary
 ib_insync
