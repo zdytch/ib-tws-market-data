@@ -1,4 +1,5 @@
-from common.models import Base
+from config.db import Base
+from common.models import BaseMixin
 from sqlalchemy import (
     Column,
     Integer,
@@ -23,14 +24,14 @@ class Timeframe(str, Enum):
     MONTH = 'M'
 
 
-class BarSet(Base):
+class BarSet(Base, BaseMixin):
     instrument_id = Column(ForeignKey('instrument.id'))
     timeframe = Column(EnumField(Timeframe), nullable=False)
 
-    instrument = relationship('Instrument', back_populates='bar_sets')
+    instrument = relationship('Instrument', backref='bar_sets')
 
 
-class Bar(Base):
+class Bar(Base, BaseMixin):
     bar_set_id = Column(ForeignKey('barset.id'))
     open = Column(Numeric(), nullable=False)
     high = Column(Numeric(), nullable=False)
@@ -39,17 +40,14 @@ class Bar(Base):
     volume = Column(Integer(), nullable=False)
     timestamp = Column(DateTime(timezone=True), nullable=False)
 
-    bar_set = relationship('BarSet', back_populates='bars')
+    bar_set = relationship('BarSet', backref='bars')
 
-    __table_args__ = UniqueConstraint('bar_set_id', 'timestamp')
-    __mapper_args__ = {'order_by': timestamp}
+    __table_args__ = (UniqueConstraint('bar_set_id', 'timestamp'),)
 
 
-class BarRange(Base):
+class BarRange(Base, BaseMixin):
     bar_set_id = Column(ForeignKey('barset.id'))
     from_dt = Column(DateTime(timezone=True), nullable=False)
     to_dt = Column(DateTime(timezone=True), nullable=False)
 
-    bar_set = relationship('BarSet', back_populates='bar_ranges')
-
-    __mapper_args__ = {'order_by': from_dt}
+    bar_set = relationship('BarSet', backref='bar_ranges')
