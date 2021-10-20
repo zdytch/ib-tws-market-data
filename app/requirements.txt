@@ -1,9 +1,8 @@
 fastapi
 fastapi-pagination
 uvicorn
-SQLAlchemy
+sqlalchemy
 asyncpg
-psycopg2-binary
 ib_insync
 loguru
 pytz

@@ -9,7 +9,7 @@ API_URL_PREFIX = '/api/v1'
 SECRET_KEY = os.environ['APP_SECRET_KEY']
 
 DB_URL = (
-    f'postgresql://{os.getenv("POSTGRES_USER")}:'
+    f'postgresql+asyncpg://{os.getenv("POSTGRES_USER")}:'
     f'{os.getenv("POSTGRES_PASSWORD")}@'
     f'mdc-db:5432/'
     f'{os.getenv("POSTGRES_DB")}'
