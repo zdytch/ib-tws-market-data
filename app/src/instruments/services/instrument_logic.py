@@ -52,7 +52,7 @@ async def search_instruments(symbol: str) -> list[Instrument]:
     return instruments
 
 
-async def get_session(instrument: Instrument) -> TradingSession:
+async def get_trading_session(instrument: Instrument) -> TradingSession:
     session, _ = await trading_session_repo.get_or_create(instrument=instrument)
 
     if not _is_session_up_to_date(session):
@@ -69,7 +69,7 @@ async def get_session(instrument: Instrument) -> TradingSession:
 
 
 async def is_overlap_open_session(instrument: Instrument, range: Range) -> bool:
-    session = await get_session(instrument)
+    session = await get_trading_session(instrument)
 
     return (
         (range.from_dt >= session.open_dt and range.to_dt < session.close_dt)
@@ -79,7 +79,7 @@ async def is_overlap_open_session(instrument: Instrument, range: Range) -> bool:
 
 
 async def is_session_open(instrument: Instrument) -> bool:
-    session = await get_session(instrument)
+    session = await get_trading_session(instrument)
 
     return session.open_dt <= datetime.now(pytz.utc) < session.close_dt
 

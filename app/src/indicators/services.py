@@ -24,7 +24,7 @@ async def get_indicator(ticker: str, length: int) -> Indicator:
         range = Range(from_dt=from_dt, to_dt=to_dt)
 
         bars = await bar_services.get_bars(bar_set, range)
-        session = await instrument_services.get_session(instrument)
+        session = await instrument_services.get_trading_session(instrument)
 
         indicator.atr = _calculate_atr(bars, length)
         indicator.valid_until = session.close_dt

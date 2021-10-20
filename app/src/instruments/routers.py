@@ -30,11 +30,11 @@ async def get_instrument(ticker: str):
 
 
 @instrument_router.get('/{ticker}/session', response_model=SessionGet)
-async def get_session(ticker: str):
+async def get_trading_session(ticker: str):
     try:
         instrument = await services.get_instrument(ticker)
-        return await services.get_session(instrument)
     except NoMatch:
+        return await services.get_trading_session(instrument)
         raise HTTPException(
             status_code=404,
             detail=f'Instrument with ticker {ticker} not found',
