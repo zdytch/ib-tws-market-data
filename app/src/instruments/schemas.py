@@ -15,6 +15,9 @@ class InstrumentGet(BaseModel):
     sector: Optional[str]
     industry: Optional[str]
 
+    class Config:
+        orm_mode = True
+
 
 class InstrumentList(InstrumentGet):
     pass
@@ -23,3 +26,6 @@ class InstrumentList(InstrumentGet):
 class SessionGet(BaseModel):
     open_dt: datetime
     close_dt: datetime
+
+    class Config:
+        orm_mode = True

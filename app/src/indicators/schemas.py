@@ -8,3 +8,6 @@ class IndicatorGet(BaseModel):
     length: int
     atr: Decimal
     valid_until: datetime
+
+    class Config:
+        orm_mode = True
