@@ -1,13 +1,15 @@
-import sqlalchemy
-import databases
-import ormar
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
 from .settings import DB_URL
 
-metadata = sqlalchemy.MetaData()
-engine = sqlalchemy.create_engine(DB_URL)
-database = databases.Database(DB_URL)
+engine = create_async_engine(DB_URL)
+
+async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+Base = declarative_base()
 
 
-class BaseMeta(ormar.ModelMeta):
-    metadata = metadata
-    database = database
+async def init_db():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)

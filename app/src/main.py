@@ -23,13 +23,7 @@ add_pagination(app)
 
 @app.on_event('startup')
 async def startup():
-    db.metadata.create_all(db.engine)
-    await db.database.connect()
+    await db.init_db()
 
     if settings.DEBUG:
         debugpy.listen(('0.0.0.0', 8888))
-
-
-@app.on_event('shutdown')
-async def shutdown():
-    await db.database.disconnect()
