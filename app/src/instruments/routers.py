@@ -33,8 +33,8 @@ async def get_instrument(ticker: str):
 async def get_trading_session(ticker: str):
     try:
         instrument = await services.get_instrument(ticker)
-    except NoMatch:
         return await services.get_trading_session(instrument)
+    except NoMatch:
         raise HTTPException(
             status_code=404,
             detail=f'Instrument with ticker {ticker} not found',
