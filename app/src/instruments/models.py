@@ -11,6 +11,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 from enum import Enum
+from datetime import datetime
 
 
 class Exchange(str, Enum):
@@ -40,7 +41,7 @@ class Instrument(Base, BaseMixin):
 
 class TradingSession(Base, BaseMixin):
     instrument_id = Column(ForeignKey('instrument.id'))
-    open_dt = Column(DateTime(timezone=True), nullable=False)
-    close_dt = Column(DateTime(timezone=True), nullable=False)
+    open_dt = Column(DateTime(timezone=True), default=datetime.now, nullable=False)
+    close_dt = Column(DateTime(timezone=True), default=datetime.now, nullable=False)
 
     instrument = relationship('Instrument', backref='sessions')
