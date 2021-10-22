@@ -1,5 +1,5 @@
 from config.db import async_session, Base
-from sqlalchemy import insert, update
+from sqlalchemy import update
 from sqlalchemy.future import select
 from sqlalchemy.orm.exc import NoResultFound
 
