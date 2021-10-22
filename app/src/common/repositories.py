@@ -1,5 +1,5 @@
 from config.db import async_session, Base
-from sqlalchemy import update
+from sqlalchemy import update, delete
 from sqlalchemy.future import select
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -65,3 +65,9 @@ class BaseRepository:
                 )
 
                 return result.scalars().all()
+
+    async def delete(self, instance: Base) -> None:
+        async with self._session_factory() as session:
+            async with session.begin():
+                session.delete(instance)
+                await session.commit()

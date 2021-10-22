@@ -1,4 +1,5 @@
 from bars.models import BarSet, Bar, BarRange
+from bars.repositories import bar_repo, bar_range_repo
 from common.schemas import Range
 from asyncpg.exceptions import UniqueViolationError
 from . import utils
@@ -6,29 +7,26 @@ from . import utils
 
 async def add_bars(bar_set: BarSet, bars: list[Bar]) -> None:
     if bars:
-        # TODO: Ormar's bulk_create() seems to work incorrectly. Implement with SQLAlchemy 2.0
         for bar in bars:
             try:
-                await bar.save()
+                await bar_repo.create(**bar.__dict__)
             except UniqueViolationError:
                 pass
 
         min_dt = min(bars, key=lambda bar: bar.timestamp).timestamp
         max_dt = max(bars, key=lambda bar: bar.timestamp).timestamp
 
-        await BarRange.objects.create(bar_set=bar_set, from_dt=min_dt, to_dt=max_dt)
+        await bar_range_repo.create(bar_set=bar_set, from_dt=min_dt, to_dt=max_dt)
 
         await _perform_range_defragmentation(bar_set)
 
 
 async def get_bars(bar_set: BarSet, range: Range) -> list[Bar]:
-    return await Bar.objects.filter(
-        bar_set=bar_set, timestamp__gte=range.from_dt, timestamp__lte=range.to_dt
-    ).all()
+    return await bar_repo.get_bars_in_range(bar_set, range)
 
 
 async def _perform_range_defragmentation(bar_set: BarSet) -> None:
-    ranges = await BarRange.objects.filter(bar_set=bar_set).all()
+    ranges = await bar_range_repo.filter(bar_set=bar_set)
     step_size = utils.get_step_size(bar_set.timeframe)
     ranges_to_delete = []
 
@@ -55,6 +53,6 @@ async def _perform_range_defragmentation(bar_set: BarSet) -> None:
         async with BarRange.Meta.database.transaction():
             for range in ranges:
                 if range in ranges_to_delete:
-                    await range.delete()
+                    await bar_range_repo.delete(range)
                 else:
-                    await range.update(['from_dt', 'to_dt'])
+                    await bar_range_repo.update(range)
