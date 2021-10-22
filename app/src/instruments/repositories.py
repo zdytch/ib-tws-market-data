@@ -4,7 +4,7 @@ from sqlalchemy.future import select
 from .models import Instrument, InstrumentType, TradingSession
 
 
-class InstrumentRepo(BaseRepository):
+class InstrumentRepository(BaseRepository):
     async def search_by_symbol_and_type(
         self, symbol: Optional[str], type: Optional[InstrumentType]
     ) -> list[Instrument]:
@@ -22,5 +22,5 @@ class InstrumentRepo(BaseRepository):
             return result.scalars().all()
 
 
-instrument_repo = InstrumentRepo(Instrument)
+instrument_repo = InstrumentRepository(Instrument)
 trading_session_repo = BaseRepository(TradingSession)
