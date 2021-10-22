@@ -1,5 +1,6 @@
 from .models import Indicator
 from bars.models import Timeframe, Bar
+from .repositories import indicator_repo
 from instruments import services as instrument_services
 from bars import services as bar_services
 from common.schemas import Range
@@ -12,8 +13,7 @@ import pytz
 async def get_indicator(ticker: str, length: int) -> Indicator:
     instrument = await instrument_services.get_instrument(ticker)
     bar_set = await bar_services.get_bar_set(instrument, Timeframe.DAY)
-    indicator = await Indicator.objects.get_or_create(bar_set=bar_set, length=length)
-    await indicator.load()  # TODO: Remove after switching to SQLAlchemy 2.0
+    indicator = await indicator_repo.get_or_create(bar_set=bar_set, length=length)
 
     now = datetime.now(pytz.utc)
     if indicator.valid_until <= now:
@@ -26,9 +26,11 @@ async def get_indicator(ticker: str, length: int) -> Indicator:
         bars = await bar_services.get_bars(bar_set, range)
         session = await instrument_services.get_trading_session(instrument)
 
-        indicator.atr = _calculate_atr(bars, length)
-        indicator.valid_until = session.close_dt
-        await indicator.update(['atr', 'valid_until'])
+        atr = _calculate_atr(bars, length)
+        valid_until = session.close_dt
+        indicator = await indicator_repo.update(
+            indicator, atr=atr, valid_until=valid_until
+        )
 
     return indicator
 
