@@ -9,7 +9,7 @@ async def add_bars(bar_set: BarSet, bars: list[Bar]) -> None:
         # TODO: Bulk create
         for bar in bars:
             try:
-                await bar_repo.create(**bar)
+                await bar_repo.create(**bar.dict())
             except bar_repo.DuplicateError:
                 pass
 
