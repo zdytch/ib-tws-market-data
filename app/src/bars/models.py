@@ -1,5 +1,4 @@
-from config.db import Base
-from common.models import BaseMixin
+from common.models import BaseModel
 from sqlalchemy import (
     Column,
     Integer,
@@ -24,14 +23,14 @@ class Timeframe(str, Enum):
     MONTH = 'M'
 
 
-class BarSet(Base, BaseMixin):
+class BarSet(BaseModel):
     instrument_id = Column(ForeignKey('instrument.id'))
     timeframe = Column(EnumField(Timeframe), nullable=False)
 
     instrument = relationship('Instrument', backref='bar_sets')
 
 
-class Bar(Base, BaseMixin):
+class Bar(BaseModel):
     bar_set_id = Column(ForeignKey('barset.id'))
     open = Column(Numeric(), nullable=False)
     high = Column(Numeric(), nullable=False)
@@ -45,7 +44,7 @@ class Bar(Base, BaseMixin):
     __table_args__ = (UniqueConstraint('bar_set_id', 'timestamp'),)
 
 
-class BarRange(Base, BaseMixin):
+class BarRange(BaseModel):
     bar_set_id = Column(ForeignKey('barset.id'))
     from_dt = Column(DateTime(timezone=True), nullable=False)
     to_dt = Column(DateTime(timezone=True), nullable=False)

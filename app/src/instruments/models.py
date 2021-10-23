@@ -1,5 +1,4 @@
-from config.db import Base
-from common.models import BaseMixin
+from common.models import BaseModel
 from sqlalchemy import (
     Column,
     String,
@@ -27,7 +26,7 @@ class InstrumentType(str, Enum):
     FUTURE = 'FUT'
 
 
-class Instrument(Base, BaseMixin):
+class Instrument(BaseModel):
     symbol = Column(String(8), nullable=False)
     ib_symbol = Column(String(8), nullable=False)
     exchange = Column(EnumField(Exchange), nullable=False)
@@ -39,7 +38,7 @@ class Instrument(Base, BaseMixin):
     __table_args__ = (UniqueConstraint('symbol', 'exchange'),)
 
 
-class TradingSession(Base, BaseMixin):
+class TradingSession(BaseModel):
     instrument_id = Column(ForeignKey('instrument.id'))
     open_dt = Column(DateTime(timezone=True), default=datetime.now, nullable=False)
     close_dt = Column(DateTime(timezone=True), default=datetime.now, nullable=False)

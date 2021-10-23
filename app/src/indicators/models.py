@@ -1,5 +1,4 @@
-from config.db import Base
-from common.models import BaseMixin
+from common.models import BaseModel
 from sqlalchemy import (
     Column,
     Integer,
@@ -12,7 +11,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 
 
-class Indicator(Base, BaseMixin):
+class Indicator(BaseModel):
     bar_set_id = Column(ForeignKey('barset.id'))
     length = Column(Integer(), nullable=False)
     atr = Column(Numeric(), nullable=False)
