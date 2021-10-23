@@ -1,11 +1,14 @@
 from config.db import async_session, Base
 from sqlalchemy import update
 from sqlalchemy.future import select
-from sqlalchemy.orm import joinedload, exc
+from sqlalchemy.orm import joinedload
+from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.exc import IntegrityError
 
 
 class BaseRepository:
-    NoResult = exc.NoResultFound
+    NoResultError = NoResultFound
+    DuplicateError = IntegrityError
 
     def __init__(self, model_class: Base) -> None:
         self._model_class = model_class
@@ -41,7 +44,7 @@ class BaseRepository:
                     instance = await self.get(*joins, **kwargs)
                     is_created = False
 
-                except self.NoResult:
+                except self.NoResultError:
                     instance = await self.create(**kwargs)
                     is_created = True
 

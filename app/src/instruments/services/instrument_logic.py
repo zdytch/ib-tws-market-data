@@ -11,7 +11,7 @@ async def get_instrument(ticker: str) -> Instrument:
 
     try:
         instrument = await instrument_repo.get(symbol=symbol, exchange=exchange)
-    except instrument_repo.NoResult:
+    except instrument_repo.NoResultError:
         info = await ib_connector.get_instrument_info(symbol, exchange)
         instrument = await instrument_repo.create(
             symbol=info.symbol,

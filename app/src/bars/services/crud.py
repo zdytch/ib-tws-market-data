@@ -1,16 +1,16 @@
-from bars.models import BarSet, Bar, BarRange
+from bars.models import BarSet, Bar
 from bars.repositories import bar_repo, bar_range_repo
 from common.schemas import Range
-from asyncpg.exceptions import UniqueViolationError
 from . import utils
 
 
 async def add_bars(bar_set: BarSet, bars: list[Bar]) -> None:
     if bars:
+        # TODO: Bulk create
         for bar in bars:
             try:
-                await bar_repo.create(**bar.__dict__)
-            except UniqueViolationError:
+                await bar_repo.create(**bar)
+            except bar_repo.DuplicateError:
                 pass
 
         min_dt = min(bars, key=lambda bar: bar.timestamp).timestamp
@@ -50,9 +50,12 @@ async def _perform_range_defragmentation(bar_set: BarSet) -> None:
                 ranges_to_delete.append(range_b)
 
     if ranges_to_delete:
-        async with BarRange.Meta.database.transaction():
-            for range in ranges:
-                if range in ranges_to_delete:
-                    await bar_range_repo.delete(range)
-                else:
-                    await bar_range_repo.update(range)
+        # TODO: Business transaction
+        for range in ranges:
+            if range in ranges_to_delete:
+                await bar_range_repo.delete(range)
+            else:
+                # TODO: Better update implementation
+                await bar_range_repo.update(
+                    range, from_dt=range.from_dt, to_dt=range.to_dt
+                )
