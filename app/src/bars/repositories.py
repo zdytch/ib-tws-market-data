@@ -1,7 +1,10 @@
+from typing import Optional
 from common.repositories import BaseRepository
 from common.schemas import Range
 from .models import Bar, BarSet, BarRange
 from sqlalchemy.future import select
+from sqlalchemy.sql import func
+from datetime import datetime
 
 
 class BarRepository(BaseRepository):
@@ -16,6 +19,15 @@ class BarRepository(BaseRepository):
                 )
 
             return result.scalars().all()
+
+    async def get_latest_timestamp(self, bar_set: BarSet) -> Optional[datetime]:
+        async with self._session_factory() as session:
+            async with session.begin():
+                result = await session.execute(
+                    select(func.max(Bar.timestamp)).filter_by(bar_set=bar_set)
+                )
+
+                return result.scalar()
 
 
 bar_repo = BarRepository(Bar)

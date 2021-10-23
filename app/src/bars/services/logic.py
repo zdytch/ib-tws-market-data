@@ -1,4 +1,5 @@
 from bars.models import BarSet, Bar, BarRange, Timeframe
+from bars.repositories import bar_repo, bar_set_repo, bar_range_repo
 from instruments.models import Instrument
 from instruments import services as instrument_services
 from common.schemas import Range
@@ -12,13 +13,15 @@ import math
 
 
 async def get_bar_set(instrument: Instrument, timeframe: Timeframe) -> BarSet:
-    return await BarSet.objects.select_related('instrument').get_or_create(
-        instrument=instrument, timeframe=timeframe
+    bar_set, _ = await bar_set_repo.get_or_create(
+        'instrument', instrument=instrument, timeframe=timeframe
     )
+
+    return bar_set
 
 
 async def get_bars(bar_set: BarSet, range: Range) -> list[Bar]:
-    existing_ranges = await BarRange.objects.filter(bar_set=bar_set).all()
+    existing_ranges = await bar_range_repo.filter(bar_set=bar_set)
     missing_ranges = _calculate_missing_ranges(range, existing_ranges)
     missing_ranges = _split_ranges(missing_ranges, bar_set.timeframe, 100)
     instrument = bar_set.instrument
@@ -60,7 +63,7 @@ async def get_bars(bar_set: BarSet, range: Range) -> list[Bar]:
 
 
 async def get_latest_timestamp(bar_set: BarSet) -> datetime:
-    latest_ts = await Bar.objects.filter(bar_set=bar_set).max('timestamp')
+    latest_ts = await bar_repo.get_latest_timestamp(bar_set)
     return latest_ts or pytz.utc.localize(datetime.min)
 
 
