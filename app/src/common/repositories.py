@@ -1,11 +1,11 @@
 from config.db import async_session, Base
-from sqlalchemy import update, delete
+from sqlalchemy import update
 from sqlalchemy.future import select
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm import joinedload, exc
 
 
 class BaseRepository:
-    NoResult = NoResultFound
+    NoResult = exc.NoResultFound
 
     def __init__(self, model_class: Base) -> None:
         self._model_class = model_class
@@ -22,20 +22,23 @@ class BaseRepository:
 
                 return instance
 
-    async def get(self, **kwargs) -> Base:
+    async def get(self, *joins: str, **kwargs) -> Base:
         async with self._session_factory() as session:
             async with session.begin():
-                result = await session.execute(
-                    select(self._model_class).filter_by(**kwargs)
-                )
+                query = select(self._model_class).filter_by(**kwargs)
+
+                for join in joins:
+                    query = query.options(joinedload(getattr(self._model_class, join)))
+
+                result = await session.execute(query)
 
                 return result.scalar_one()
 
-    async def get_or_create(self, **kwargs) -> Base:
+    async def get_or_create(self, *joins: str, **kwargs) -> Base:
         async with self._session_factory() as session:
             async with session.begin():
                 try:
-                    instance = await self.get(**kwargs)
+                    instance = await self.get(*joins, **kwargs)
                     is_created = False
 
                 except self.NoResult:
@@ -69,5 +72,5 @@ class BaseRepository:
     async def delete(self, instance: Base) -> None:
         async with self._session_factory() as session:
             async with session.begin():
-                session.delete(instance)
+                await session.delete(instance)
                 await session.commit()
