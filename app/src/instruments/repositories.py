@@ -10,10 +10,10 @@ class InstrumentRepository(BaseRepository):
     ) -> list[Instrument]:
         async with self._session_factory() as session:
             async with session.begin():
-                query = select(self._model_class)
+                query = select(Instrument)
 
                 if symbol:
-                    query = query.where(self._model_class.symbol.contains(symbol))
+                    query = query.where(Instrument.symbol.contains(symbol))
                 if type:
                     query = query.filter_by(type=type)
 
