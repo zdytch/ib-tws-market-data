@@ -1,4 +1,6 @@
-from config.db import async_session, Base
+from typing import Type
+from config.db import async_session
+from common.models import BaseModel
 from sqlalchemy import update
 from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload
@@ -10,11 +12,11 @@ class BaseRepository:
     NoResultError = NoResultFound
     DuplicateError = IntegrityError
 
-    def __init__(self, model_class: Base) -> None:
+    def __init__(self, model_class: Type[BaseModel]) -> None:
         self._model_class = model_class
         self._session_factory = async_session
 
-    async def create(self, **kwargs) -> Base:
+    async def create(self, **kwargs) -> Type[BaseModel]:
         async with self._session_factory() as session:
             async with session.begin():
                 instance = self._model_class(**kwargs)
@@ -25,7 +27,7 @@ class BaseRepository:
 
                 return instance
 
-    async def get(self, *joins: str, **kwargs) -> Base:
+    async def get(self, *joins: str, **kwargs) -> Type[BaseModel]:
         async with self._session_factory() as session:
             async with session.begin():
                 query = select(self._model_class).filter_by(**kwargs)
@@ -37,7 +39,9 @@ class BaseRepository:
 
                 return result.scalar_one()
 
-    async def get_or_create(self, *joins: str, **kwargs) -> Base:
+    async def get_or_create(
+        self, *joins: str, **kwargs
+    ) -> tuple[Type[BaseModel], bool]:
         async with self._session_factory() as session:
             async with session.begin():
                 try:
@@ -50,7 +54,7 @@ class BaseRepository:
 
             return instance, is_created
 
-    async def update(self, instance: Base, **kwargs) -> Base:
+    async def update(self, instance: Type[BaseModel], **kwargs) -> Type[BaseModel]:
         async with self._session_factory() as session:
             async with session.begin():
                 await session.execute(
@@ -63,7 +67,7 @@ class BaseRepository:
 
                 return instance
 
-    async def filter(self, **kwargs) -> list[Base]:
+    async def filter(self, **kwargs) -> list[Type[BaseModel]]:
         async with self._session_factory() as session:
             async with session.begin():
                 result = await session.execute(
@@ -72,7 +76,7 @@ class BaseRepository:
 
                 return result.scalars().all()
 
-    async def delete(self, instance: Base) -> None:
+    async def delete(self, instance: Type[BaseModel]) -> None:
         async with self._session_factory() as session:
             async with session.begin():
                 await session.delete(instance)

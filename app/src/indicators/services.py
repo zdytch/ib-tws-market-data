@@ -13,7 +13,7 @@ import pytz
 async def get_indicator(ticker: str, length: int) -> Indicator:
     instrument = await instrument_services.get_instrument(ticker)
     bar_set = await bar_services.get_bar_set(instrument, Timeframe.DAY)
-    indicator = await indicator_repo.get_or_create(bar_set=bar_set, length=length)
+    indicator, _ = await indicator_repo.get_or_create(bar_set=bar_set, length=length)
 
     now = datetime.now(pytz.utc)
     if indicator.valid_until <= now:
