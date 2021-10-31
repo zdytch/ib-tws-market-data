@@ -16,14 +16,14 @@ class BaseRepository:
         self._model_class = model_class
         self._session_factory = async_session
 
-    async def create(self, **kwargs) -> Type[BaseModel]:
+    async def create(self, *joins, **kwargs) -> Type[BaseModel]:
         async with self._session_factory() as session:
             async with session.begin():
                 instance = self._model_class(**kwargs)
                 session.add(instance)
                 await session.commit()
 
-                instance = await self.get(id=instance.id)
+                instance = await self.get(*joins, id=instance.id)
 
                 return instance
 
@@ -32,8 +32,8 @@ class BaseRepository:
             async with session.begin():
                 query = select(self._model_class).filter_by(**kwargs)
 
-                for join in joins:
-                    query = query.options(joinedload(getattr(self._model_class, join)))
+                if joins:
+                    query = query.options(joinedload(*joins))
 
                 result = await session.execute(query)
 
@@ -49,7 +49,7 @@ class BaseRepository:
                     is_created = False
 
                 except self.NoResultError:
-                    instance = await self.create(**kwargs)
+                    instance = await self.create(*joins, **kwargs)
                     is_created = True
 
             return instance, is_created
