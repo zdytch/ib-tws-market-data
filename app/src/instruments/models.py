@@ -56,7 +56,7 @@ class Instrument(BaseModel):
 
 
 class TradingSession(BaseModel):
-    instrument_id = Column(ForeignKey('instrument.id'))
+    instrument_id = Column(ForeignKey('instrument.id', ondelete='CASCADE'))
     open_dt = Column(DateTime(timezone=True), default=datetime.now, nullable=False)
     close_dt = Column(DateTime(timezone=True), default=datetime.now, nullable=False)
 
