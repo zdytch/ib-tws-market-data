@@ -4,10 +4,24 @@ from common.schemas import Range
 from .models import Bar, BarSet, BarRange
 from sqlalchemy.future import select
 from sqlalchemy.sql import func
+from sqlalchemy.dialects.postgresql import insert
 from datetime import datetime
 
 
 class BarRepository(BaseRepository):
+    async def bulk_save(self, bars: list[Bar]) -> None:
+        async with self._session_factory() as session:
+            async with session.begin():
+                values = [bar.dict() for bar in bars]
+
+                for value in values:
+                    value['bar_set_id'] = value['bar_set'].id
+                    value.pop('bar_set')
+
+                query = insert(Bar).values(values).on_conflict_do_nothing()
+
+                await session.execute(query)
+
     async def get_bars_in_range(self, bar_set: BarSet, range: Range) -> list[Bar]:
         async with self._session_factory() as session:
             async with session.begin():

@@ -6,12 +6,7 @@ from . import utils
 
 async def add_bars(bar_set: BarSet, bars: list[Bar]) -> None:
     if bars:
-        # TODO: Bulk create
-        for bar in bars:
-            try:
-                await bar_repo.create(**bar.dict())
-            except bar_repo.DuplicateError:
-                pass
+        await bar_repo.bulk_save(bars)
 
         min_dt = min(bars, key=lambda bar: bar.timestamp).timestamp
         max_dt = max(bars, key=lambda bar: bar.timestamp).timestamp
