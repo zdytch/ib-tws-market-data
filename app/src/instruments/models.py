@@ -1,19 +1,36 @@
+# Workaround for SQLAlchemy Enum typing:
+# https://github.com/dropbox/sqlalchemy-stubs/issues/114
+from typing import TypeVar, Type, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from sqlalchemy.sql.type_api import TypeEngine
+
+    T = TypeVar('T')
+
+    class Enum(TypeEngine[T]):
+        def __init__(self, enum: Type[T]) -> None:
+            ...
+
+
+else:
+    from sqlalchemy import Enum
+# End
+
 from common.models import BaseModel
 from sqlalchemy import (
     Column,
     String,
     Numeric,
-    Enum as EnumField,
     DateTime,
     ForeignKey,
     UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
-from enum import Enum
+import enum
 from datetime import datetime
 
 
-class Exchange(str, Enum):
+class Exchange(enum.Enum):
     NYSE = 'NYSE'
     NASDAQ = 'NASDAQ'
     GLOBEX = 'GLOBEX'
@@ -21,7 +38,7 @@ class Exchange(str, Enum):
     ECBOT = 'ECBOT'
 
 
-class InstrumentType(str, Enum):
+class InstrumentType(enum.Enum):
     STOCK = 'STK'
     FUTURE = 'FUT'
 
@@ -29,8 +46,8 @@ class InstrumentType(str, Enum):
 class Instrument(BaseModel):
     symbol = Column(String(8), nullable=False)
     ib_symbol = Column(String(8), nullable=False)
-    exchange = Column(EnumField(Exchange), nullable=False)
-    type = Column(EnumField(InstrumentType), nullable=False)
+    exchange = Column(Enum(Exchange), nullable=False)
+    type = Column(Enum(InstrumentType), nullable=False)
     description = Column(String(64), nullable=False)
     tick_size = Column(Numeric(), nullable=False)
     multiplier = Column(Numeric(), nullable=False)

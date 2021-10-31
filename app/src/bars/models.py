@@ -1,18 +1,35 @@
+# Workaround for SQLAlchemy Enum typing:
+# https://github.com/dropbox/sqlalchemy-stubs/issues/114
+from typing import TypeVar, Type, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from sqlalchemy.sql.type_api import TypeEngine
+
+    T = TypeVar('T')
+
+    class Enum(TypeEngine[T]):
+        def __init__(self, enum: Type[T]) -> None:
+            ...
+
+
+else:
+    from sqlalchemy import Enum
+# End
+
 from common.models import BaseModel
 from sqlalchemy import (
     Column,
     Integer,
     Numeric,
-    Enum as EnumField,
     DateTime,
     ForeignKey,
     UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
-from enum import Enum
+import enum
 
 
-class Timeframe(str, Enum):
+class Timeframe(enum.Enum):
     M1 = '1'
     M5 = '5'
     M15 = '15'
@@ -25,7 +42,7 @@ class Timeframe(str, Enum):
 
 class BarSet(BaseModel):
     instrument_id = Column(ForeignKey('instrument.id'))
-    timeframe = Column(EnumField(Timeframe), nullable=False)
+    timeframe = Column(Enum(Timeframe), nullable=False)
 
     instrument = relationship('Instrument', backref='bar_sets')
 

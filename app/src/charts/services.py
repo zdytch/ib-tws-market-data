@@ -57,8 +57,8 @@ async def get_info(ticker: str) -> Info:
 
         info.type = instrument_type
         info.description = instrument.description
-        info.exchange = instrument.exchange
-        info.listed_exchange = instrument.exchange
+        info.exchange = instrument.exchange.value
+        info.listed_exchange = instrument.exchange.value
         info.session = session
         info.timezone = timezone
         info.minmov = min_movement

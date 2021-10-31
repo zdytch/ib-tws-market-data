@@ -128,9 +128,9 @@ class IBConnector:
         contract_type = utils.security_type_to_ib(exchange, instrument_type)
 
         if contract_type == 'STK':
-            contract_exchange = f'SMART:{exchange}' if exchange else 'SMART'
+            contract_exchange = f'SMART:{exchange.value}' if exchange else 'SMART'
         else:
-            contract_exchange = f'{exchange}' if exchange else ''
+            contract_exchange = exchange.value if exchange else ''
 
         return Contract(
             symbol=contract_symbol,
