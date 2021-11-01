@@ -1,3 +1,4 @@
+# TODO: Remove workaround
 # Workaround for SQLAlchemy Enum typing:
 # https://github.com/dropbox/sqlalchemy-stubs/issues/114
 from typing import TypeVar, Type, TYPE_CHECKING
