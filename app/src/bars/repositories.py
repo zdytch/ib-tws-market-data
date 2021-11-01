@@ -30,6 +30,7 @@ class BarRepository(BaseRepository):
                     .where(Bar.bar_set == bar_set)
                     .where(Bar.timestamp >= range.from_dt)
                     .where(Bar.timestamp <= range.to_dt)
+                    .order_by(Bar.timestamp)
                 )
 
             return result.scalars().all()
