@@ -80,4 +80,3 @@ class BaseRepository:
         async with self._session_factory() as session:
             async with session.begin():
                 await session.delete(instance)
-                await session.commit()
