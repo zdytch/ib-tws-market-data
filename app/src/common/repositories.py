@@ -5,12 +5,10 @@ from sqlalchemy import update
 from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.exc import IntegrityError
 
 
 class BaseRepository:
     NoResultError = NoResultFound
-    DuplicateError = IntegrityError
 
     def __init__(self, model_class: Type[BaseModel]) -> None:
         self._model_class = model_class
@@ -27,7 +25,7 @@ class BaseRepository:
 
                 return instance
 
-    async def get(self, *joins: str, **kwargs) -> Type[BaseModel]:
+    async def get(self, *joins, **kwargs) -> Type[BaseModel]:
         async with self._session_factory() as session:
             async with session.begin():
                 query = select(self._model_class).filter_by(**kwargs)
