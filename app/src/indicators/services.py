@@ -28,9 +28,7 @@ async def get_indicator(ticker: str, length: int) -> Indicator:
 
         atr = _calculate_atr(bars, length)
         valid_until = session.close_dt
-        indicator = await indicator_repo.update(
-            indicator, atr=atr, valid_until=valid_until
-        )
+        await indicator_repo.update(indicator, atr=atr, valid_until=valid_until)
 
     return indicator
 

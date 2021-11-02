@@ -50,7 +50,4 @@ async def _perform_range_defragmentation(bar_set: BarSet) -> None:
             if range in ranges_to_delete:
                 await bar_range_repo.delete(range)
             else:
-                # TODO: Better update implementation
-                await bar_range_repo.update(
-                    range, from_dt=range.from_dt, to_dt=range.to_dt
-                )
+                await bar_range_repo.update(range)

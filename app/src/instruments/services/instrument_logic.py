@@ -59,7 +59,7 @@ async def get_trading_session(instrument: Instrument) -> TradingSession:
         info = await ib_connector.get_instrument_info(
             instrument.symbol, instrument.exchange
         )
-        session = await trading_session_repo.update(
+        await trading_session_repo.update(
             session,
             open_dt=info.trading_range.from_dt,
             close_dt=info.trading_range.to_dt,

@@ -39,9 +39,7 @@ class BaseRepository:
 
                 return result.scalar_one()
 
-    async def get_or_create(
-        self, *joins: str, **kwargs
-    ) -> tuple[Type[BaseModel], bool]:
+    async def get_or_create(self, *joins, **kwargs) -> tuple[Type[BaseModel], bool]:
         async with self._session_factory() as session:
             async with session.begin():
                 try:
@@ -54,18 +52,20 @@ class BaseRepository:
 
             return instance, is_created
 
-    async def update(self, instance: Type[BaseModel], **kwargs) -> Type[BaseModel]:
+    async def update(self, instance: BaseModel, **kwargs) -> None:
         async with self._session_factory() as session:
             async with session.begin():
+                for key, value in kwargs.items():
+                    if hasattr(instance, key):
+                        setattr(instance, key, value)
+
+                values = kwargs or instance.db_values()
+
                 await session.execute(
                     update(self._model_class)
                     .where(self._model_class.id == instance.id)
-                    .values(**kwargs)
+                    .values(values)
                 )
-
-                instance = await self.get(id=instance.id)
-
-                return instance
 
     async def filter(self, **kwargs) -> list[Type[BaseModel]]:
         async with self._session_factory() as session:
@@ -76,7 +76,7 @@ class BaseRepository:
 
                 return result.scalars().all()
 
-    async def delete(self, instance: Type[BaseModel]) -> None:
+    async def delete(self, instance: BaseModel) -> None:
         async with self._session_factory() as session:
             async with session.begin():
                 await session.delete(instance)
