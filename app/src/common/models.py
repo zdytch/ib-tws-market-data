@@ -15,16 +15,15 @@ class BaseModel(Base):
     def dict(self) -> dict:
         return {
             key: value
-            for (key, value) in self.__dict__.items()
+            for key, value in self.__dict__.items()
             if not key.startswith('_')
         }
 
     def __repr__(self) -> str:
-        fields = sorted(self.dict().items())
-        all_attr_string = ''
+        attr_repr = ''
 
-        for attr, value in fields:
+        for attr, value in sorted(self.dict().items()):
             if attr != 'id':
-                all_attr_string += f', {attr}={repr(value)}'
+                attr_repr += f', {attr}={repr(value)}'
 
-        return f'{self.__class__.__name__}(id={self.id}{all_attr_string})'
+        return f'{self.__class__.__name__}(id={self.id}{attr_repr})'
