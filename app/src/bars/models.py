@@ -42,14 +42,16 @@ class Timeframe(enum.Enum):
 
 
 class BarSet(BaseModel):
-    instrument_id = Column(ForeignKey('instrument.id', ondelete='CASCADE'))
+    instrument_id = Column(
+        ForeignKey('instrument.id', ondelete='CASCADE'), nullable=False
+    )
     timeframe = Column(Enum(Timeframe), nullable=False)
 
     instrument = relationship('Instrument', backref='bar_sets')
 
 
 class Bar(BaseModel):
-    bar_set_id = Column(ForeignKey('barset.id', ondelete='CASCADE'))
+    bar_set_id = Column(ForeignKey('barset.id', ondelete='CASCADE'), nullable=False)
     open = Column(Numeric(), nullable=False)
     high = Column(Numeric(), nullable=False)
     low = Column(Numeric(), nullable=False)
@@ -63,7 +65,7 @@ class Bar(BaseModel):
 
 
 class BarRange(BaseModel):
-    bar_set_id = Column(ForeignKey('barset.id', ondelete='CASCADE'))
+    bar_set_id = Column(ForeignKey('barset.id', ondelete='CASCADE'), nullable=False)
     from_dt = Column(DateTime(timezone=True), nullable=False)
     to_dt = Column(DateTime(timezone=True), nullable=False)
 

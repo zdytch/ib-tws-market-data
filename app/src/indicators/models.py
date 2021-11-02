@@ -12,7 +12,7 @@ from datetime import datetime
 
 
 class Indicator(BaseModel):
-    bar_set_id = Column(ForeignKey('barset.id', ondelete='CASCADE'))
+    bar_set_id = Column(ForeignKey('barset.id', ondelete='CASCADE'), nullable=False)
     length = Column(Integer(), nullable=False)
     atr = Column(Numeric(), nullable=False)
     valid_until = Column(DateTime(timezone=True), default=datetime.now, nullable=False)
