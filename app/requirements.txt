@@ -1,7 +1,7 @@
 fastapi
 fastapi-pagination
 uvicorn
-sqlalchemy
+sqlmodel
 asyncpg
 ib_insync
 loguru
