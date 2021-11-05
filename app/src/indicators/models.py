@@ -1,12 +1,12 @@
-from common.models import IDMixin
-from sqlmodel import SQLModel, Field, Column, DateTime, ForeignKey, Relationship
+from common.models import Model
+from sqlmodel import Field, Column, DateTime, ForeignKey, Relationship
 from sqlalchemy import UniqueConstraint, orm
 from bars.models import BarSet
 from decimal import Decimal
 from datetime import datetime
 
 
-class Indicator(SQLModel, IDMixin, table=True):
+class Indicator(Model, table=True):
     bar_set_id: int = Field(
         sa_column=Column(ForeignKey('barset.id', ondelete='CASCADE'), nullable=False)
     )

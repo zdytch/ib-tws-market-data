@@ -1,7 +1,6 @@
 from typing import Optional
-from pydantic import BaseModel
-from sqlmodel import Field
+from sqlmodel import SQLModel, Field
 
 
-class IDMixin(BaseModel):
+class Model(SQLModel):
     id: Optional[int] = Field(default=None, primary_key=True)

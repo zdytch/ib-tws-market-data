@@ -1,5 +1,5 @@
-from common.models import IDMixin
-from sqlmodel import SQLModel, Field, Column, Enum, DateTime, ForeignKey, Relationship
+from common.models import Model
+from sqlmodel import Field, Column, Enum, DateTime, ForeignKey, Relationship
 from sqlalchemy import UniqueConstraint, orm
 from decimal import Decimal
 from datetime import datetime
@@ -19,7 +19,7 @@ class InstrumentType(enum.Enum):
     FUTURE = 'FUT'
 
 
-class Instrument(SQLModel, IDMixin, table=True):
+class Instrument(Model, table=True):
     symbol: str
     ib_symbol: str
     exchange: Exchange = Field(sa_column=Column(Enum(Exchange), nullable=False))
@@ -31,7 +31,7 @@ class Instrument(SQLModel, IDMixin, table=True):
     __table_args__ = (UniqueConstraint('symbol', 'exchange'),)
 
 
-class TradingSession(SQLModel, IDMixin, table=True):
+class TradingSession(Model, table=True):
     instrument_id: int = Field(
         sa_column=Column(
             ForeignKey('instrument.id', ondelete='CASCADE'), nullable=False

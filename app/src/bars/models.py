@@ -1,5 +1,5 @@
-from common.models import IDMixin
-from sqlmodel import SQLModel, Field, Column, Enum, DateTime, ForeignKey, Relationship
+from common.models import Model
+from sqlmodel import Field, Column, Enum, DateTime, ForeignKey, Relationship
 from sqlalchemy import UniqueConstraint, orm
 from instruments.models import Instrument
 from decimal import Decimal
@@ -18,7 +18,7 @@ class Timeframe(enum.Enum):
     MONTH = 'M'
 
 
-class BarSet(SQLModel, IDMixin, table=True):
+class BarSet(Model, table=True):
     instrument_id: int = Field(
         sa_column=Column(
             ForeignKey('instrument.id', ondelete='CASCADE'), nullable=False
@@ -30,7 +30,7 @@ class BarSet(SQLModel, IDMixin, table=True):
     timeframe: Timeframe = Field(sa_column=Column(Enum(Timeframe)))
 
 
-class Bar(SQLModel, IDMixin, table=True):
+class Bar(Model, table=True):
     bar_set_id: int = Field(
         sa_column=Column(ForeignKey('barset.id', ondelete='CASCADE'), nullable=False)
     )
@@ -49,7 +49,7 @@ class Bar(SQLModel, IDMixin, table=True):
     __table_args__ = (UniqueConstraint('bar_set_id', 'timestamp'),)
 
 
-class BarRange(SQLModel, IDMixin, table=True):
+class BarRange(Model, table=True):
     bar_set_id: int = Field(
         sa_column=Column(ForeignKey('barset.id', ondelete='CASCADE'), nullable=False)
     )
