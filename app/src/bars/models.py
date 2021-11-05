@@ -1,32 +1,9 @@
-# TODO: Remove workaround
-# Workaround for SQLAlchemy Enum typing:
-# https://github.com/dropbox/sqlalchemy-stubs/issues/114
-from typing import TypeVar, Type, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from sqlalchemy.sql.type_api import TypeEngine
-
-    T = TypeVar('T')
-
-    class Enum(TypeEngine[T]):
-        def __init__(self, enum: Type[T]) -> None:
-            ...
-
-
-else:
-    from sqlalchemy import Enum
-# End
-
-from common.models import BaseModel
-from sqlalchemy import (
-    Column,
-    Integer,
-    Numeric,
-    DateTime,
-    ForeignKey,
-    UniqueConstraint,
-)
-from sqlalchemy.orm import relationship
+from common.models import IDMixin
+from sqlmodel import SQLModel, Field, Relationship, Column, Enum
+from sqlalchemy import UniqueConstraint, orm
+from instruments.models import Instrument
+from decimal import Decimal
+from datetime import datetime
 import enum
 
 
@@ -41,32 +18,36 @@ class Timeframe(enum.Enum):
     MONTH = 'M'
 
 
-class BarSet(BaseModel):
-    instrument_id = Column(
-        ForeignKey('instrument.id', ondelete='CASCADE'), nullable=False
+class BarSet(SQLModel, IDMixin, table=True):
+    instrument_id: int = Field(foreign_key='instrument.id')
+    timeframe: Timeframe = Field(sa_column=Column(Enum(Timeframe)))
+
+    instrument: Instrument = Relationship(
+        sa_relationship=orm.RelationshipProperty('Instrument', backref='bar_sets')
     )
-    timeframe = Column(Enum(Timeframe), nullable=False)
-
-    instrument = relationship('Instrument', backref='bar_sets')
 
 
-class Bar(BaseModel):
-    bar_set_id = Column(ForeignKey('barset.id', ondelete='CASCADE'), nullable=False)
-    open = Column(Numeric(), nullable=False)
-    high = Column(Numeric(), nullable=False)
-    low = Column(Numeric(), nullable=False)
-    close = Column(Numeric(), nullable=False)
-    volume = Column(Integer(), nullable=False)
-    timestamp = Column(DateTime(timezone=True), nullable=False)
+class Bar(SQLModel, IDMixin, table=True):
+    bar_set_id: int = Field(foreign_key='barset.id')
+    open: Decimal
+    high: Decimal
+    low: Decimal
+    close: Decimal
+    volume: int
+    timestamp: datetime
 
-    bar_set = relationship('BarSet', backref='bars')
+    bar_set: BarSet = Relationship(
+        sa_relationship=orm.RelationshipProperty('BarSet', backref='bars')
+    )
 
     __table_args__ = (UniqueConstraint('bar_set_id', 'timestamp'),)
 
 
-class BarRange(BaseModel):
-    bar_set_id = Column(ForeignKey('barset.id', ondelete='CASCADE'), nullable=False)
-    from_dt = Column(DateTime(timezone=True), nullable=False)
-    to_dt = Column(DateTime(timezone=True), nullable=False)
+class BarRange(SQLModel, IDMixin, table=True):
+    bar_set_id: int = Field(foreign_key='barset.id')
+    from_dt: datetime
+    to_dt: datetime
 
-    bar_set = relationship('BarSet', backref='bar_ranges')
+    bar_set: BarSet = Relationship(
+        sa_relationship=orm.RelationshipProperty('BarSet', backref='bar_ranges')
+    )

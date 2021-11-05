@@ -1,34 +1,9 @@
-# TODO: Remove workaround
-# Workaround for SQLAlchemy Enum typing:
-# https://github.com/dropbox/sqlalchemy-stubs/issues/114
-from typing import TypeVar, Type, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from sqlalchemy.sql.type_api import TypeEngine
-
-    T = TypeVar('T')
-
-    class Enum(TypeEngine[T]):
-        def __init__(self, enum: Type[T]) -> None:
-            ...
-
-
-else:
-    from sqlalchemy import Enum
-# End
-
-from common.models import BaseModel
-from sqlalchemy import (
-    Column,
-    String,
-    Numeric,
-    DateTime,
-    ForeignKey,
-    UniqueConstraint,
-)
-from sqlalchemy.orm import relationship
-import enum
+from common.models import IDMixin
+from sqlmodel import SQLModel, Field, Relationship, Column, Enum, DateTime
+from sqlalchemy import UniqueConstraint, orm
+from decimal import Decimal
 from datetime import datetime
+import enum
 
 
 class Exchange(enum.Enum):
@@ -44,23 +19,29 @@ class InstrumentType(enum.Enum):
     FUTURE = 'FUT'
 
 
-class Instrument(BaseModel):
-    symbol = Column(String(8), nullable=False)
-    ib_symbol = Column(String(8), nullable=False)
-    exchange = Column(Enum(Exchange), nullable=False)
-    type = Column(Enum(InstrumentType), nullable=False)
-    description = Column(String(64), nullable=False)
-    tick_size = Column(Numeric(), nullable=False)
-    multiplier = Column(Numeric(), nullable=False)
+class Instrument(SQLModel, IDMixin, table=True):
+    symbol: str
+    ib_symbol: str
+    exchange: Exchange = Field(sa_column=Column(Enum(Exchange), nullable=False))
+    type: InstrumentType = Field(sa_column=Column(Enum(InstrumentType), nullable=False))
+    description: str
+    tick_size: Decimal
+    multiplier: Decimal
 
     __table_args__ = (UniqueConstraint('symbol', 'exchange'),)
 
 
-class TradingSession(BaseModel):
-    instrument_id = Column(
-        ForeignKey('instrument.id', ondelete='CASCADE'), nullable=False
+class TradingSession(SQLModel, IDMixin, table=True):
+    instrument_id: int = Field(foreign_key='instrument.id')
+    open_dt: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), default=datetime.now, nullable=False)
     )
-    open_dt = Column(DateTime(timezone=True), default=datetime.now, nullable=False)
-    close_dt = Column(DateTime(timezone=True), default=datetime.now, nullable=False)
+    close_dt: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), default=datetime.now, nullable=False)
+    )
 
-    instrument = relationship('Instrument', backref='sessions')
+    instrument: Instrument = Relationship(
+        sa_relationship=orm.RelationshipProperty(
+            'Instrument', backref='session', uselist=False
+        )
+    )

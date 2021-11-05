@@ -1,22 +1,19 @@
-from common.models import BaseModel
-from sqlalchemy import (
-    Column,
-    Integer,
-    Numeric,
-    DateTime,
-    ForeignKey,
-    UniqueConstraint,
-)
-from sqlalchemy.orm import relationship
+from common.models import IDMixin
+from sqlmodel import SQLModel, Field, Relationship
+from sqlalchemy import UniqueConstraint, orm
+from bars.models import BarSet
+from decimal import Decimal
 from datetime import datetime
 
 
-class Indicator(BaseModel):
-    bar_set_id = Column(ForeignKey('barset.id', ondelete='CASCADE'), nullable=False)
-    length = Column(Integer(), nullable=False)
-    atr = Column(Numeric(), nullable=False)
-    valid_until = Column(DateTime(timezone=True), default=datetime.now, nullable=False)
+class Indicator(SQLModel, IDMixin, table=True):
+    bar_set_id: int = Field(foreign_key='barset.id')
+    length: int
+    atr: Decimal
+    valid_until: datetime = Field(default=datetime.now)
 
-    bar_set = relationship('BarSet', backref='indicators')
+    bar_set: BarSet = Relationship(
+        sa_relationship=orm.RelationshipProperty('BarSet', backref='indicators')
+    )
 
     __table_args__ = (UniqueConstraint('bar_set_id', 'length'),)
