@@ -1,5 +1,5 @@
 from common.models import IDMixin
-from sqlmodel import SQLModel, Field, Relationship, Column, Enum, DateTime
+from sqlmodel import SQLModel, Field, Column, Enum, DateTime, ForeignKey, Relationship
 from sqlalchemy import UniqueConstraint, orm
 from decimal import Decimal
 from datetime import datetime
@@ -32,16 +32,19 @@ class Instrument(SQLModel, IDMixin, table=True):
 
 
 class TradingSession(SQLModel, IDMixin, table=True):
-    instrument_id: int = Field(foreign_key='instrument.id')
+    instrument_id: int = Field(
+        sa_column=Column(
+            ForeignKey('instrument.id', ondelete='CASCADE'), nullable=False
+        )
+    )
+    instrument: Instrument = Relationship(
+        sa_relationship=orm.RelationshipProperty(
+            'Instrument', backref='session', uselist=False
+        )
+    )
     open_dt: datetime = Field(
         sa_column=Column(DateTime(timezone=True), default=datetime.now, nullable=False)
     )
     close_dt: datetime = Field(
         sa_column=Column(DateTime(timezone=True), default=datetime.now, nullable=False)
-    )
-
-    instrument: Instrument = Relationship(
-        sa_relationship=orm.RelationshipProperty(
-            'Instrument', backref='session', uselist=False
-        )
     )

@@ -1,5 +1,5 @@
 from common.models import IDMixin
-from sqlmodel import SQLModel, Field, Relationship, Column, Enum
+from sqlmodel import SQLModel, Field, Column, Enum, DateTime, ForeignKey, Relationship
 from sqlalchemy import UniqueConstraint, orm
 from instruments.models import Instrument
 from decimal import Decimal
@@ -19,35 +19,42 @@ class Timeframe(enum.Enum):
 
 
 class BarSet(SQLModel, IDMixin, table=True):
-    instrument_id: int = Field(foreign_key='instrument.id')
-    timeframe: Timeframe = Field(sa_column=Column(Enum(Timeframe)))
-
+    instrument_id: int = Field(
+        sa_column=Column(
+            ForeignKey('instrument.id', ondelete='CASCADE'), nullable=False
+        )
+    )
     instrument: Instrument = Relationship(
         sa_relationship=orm.RelationshipProperty('Instrument', backref='bar_sets')
     )
+    timeframe: Timeframe = Field(sa_column=Column(Enum(Timeframe)))
 
 
 class Bar(SQLModel, IDMixin, table=True):
-    bar_set_id: int = Field(foreign_key='barset.id')
+    bar_set_id: int = Field(
+        sa_column=Column(ForeignKey('barset.id', ondelete='CASCADE'), nullable=False)
+    )
+    bar_set: BarSet = Relationship(
+        sa_relationship=orm.RelationshipProperty('BarSet', backref='bars')
+    )
     open: Decimal
     high: Decimal
     low: Decimal
     close: Decimal
     volume: int
-    timestamp: datetime
-
-    bar_set: BarSet = Relationship(
-        sa_relationship=orm.RelationshipProperty('BarSet', backref='bars')
+    timestamp: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False)
     )
 
     __table_args__ = (UniqueConstraint('bar_set_id', 'timestamp'),)
 
 
 class BarRange(SQLModel, IDMixin, table=True):
-    bar_set_id: int = Field(foreign_key='barset.id')
-    from_dt: datetime
-    to_dt: datetime
-
+    bar_set_id: int = Field(
+        sa_column=Column(ForeignKey('barset.id', ondelete='CASCADE'), nullable=False)
+    )
     bar_set: BarSet = Relationship(
         sa_relationship=orm.RelationshipProperty('BarSet', backref='bar_ranges')
     )
+    from_dt: datetime = Field(sa_column=Column(DateTime(timezone=True), nullable=False))
+    to_dt: datetime = Field(sa_column=Column(DateTime(timezone=True), nullable=False))
