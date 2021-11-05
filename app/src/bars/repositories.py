@@ -12,7 +12,7 @@ class BarRepository(BaseRepository):
     async def bulk_save(self, bars: list[Bar]) -> None:
         async with self._session_factory() as session:
             async with session.begin():
-                values = [bar.db_values() for bar in bars]
+                values = [bar.dict(exclude_none=True) for bar in bars]
                 query = insert(Bar).values(values).on_conflict_do_nothing()
 
                 await session.execute(query)
