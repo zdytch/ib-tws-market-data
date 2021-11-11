@@ -1,6 +1,6 @@
 from common.models import DBModel
-from sqlmodel import Field, Column, Enum, DateTime, ForeignKey, Relationship
-from sqlalchemy import UniqueConstraint, orm
+from sqlmodel import Field, Column, Enum, DateTime, ForeignKey
+from sqlalchemy import UniqueConstraint
 from uuid import UUID
 from decimal import Decimal
 from datetime import datetime
@@ -36,11 +36,6 @@ class TradingSession(DBModel, table=True):
     instrument_id: UUID = Field(
         sa_column=Column(
             ForeignKey('instrument.id', ondelete='CASCADE'), nullable=False
-        )
-    )
-    instrument: Instrument = Relationship(
-        sa_relationship=orm.RelationshipProperty(
-            'Instrument', backref='session', uselist=False
         )
     )
     open_dt: datetime = Field(

@@ -1,6 +1,6 @@
 from common.models import DBModel
 from sqlmodel import Field, Column, Enum, DateTime, ForeignKey, Relationship
-from sqlalchemy import UniqueConstraint, orm
+from sqlalchemy import UniqueConstraint
 from instruments.models import Instrument
 from uuid import UUID
 from decimal import Decimal
@@ -25,9 +25,7 @@ class BarSet(DBModel, table=True):
             ForeignKey('instrument.id', ondelete='CASCADE'), nullable=False
         )
     )
-    instrument: Instrument = Relationship(
-        sa_relationship=orm.RelationshipProperty('Instrument', backref='bar_sets')
-    )
+    instrument: Instrument = Relationship(back_populates='bar_sets')
     timeframe: Timeframe = Field(sa_column=Column(Enum(Timeframe)))
 
 
@@ -35,9 +33,7 @@ class Bar(DBModel, table=True):
     bar_set_id: UUID = Field(
         sa_column=Column(ForeignKey('barset.id', ondelete='CASCADE'), nullable=False)
     )
-    bar_set: BarSet = Relationship(
-        sa_relationship=orm.RelationshipProperty('BarSet', backref='bars')
-    )
+    bar_set: BarSet = Relationship(back_populates='bars')
     open: Decimal
     high: Decimal
     low: Decimal
@@ -53,9 +49,6 @@ class Bar(DBModel, table=True):
 class BarRange(DBModel, table=True):
     bar_set_id: UUID = Field(
         sa_column=Column(ForeignKey('barset.id', ondelete='CASCADE'), nullable=False)
-    )
-    bar_set: BarSet = Relationship(
-        sa_relationship=orm.RelationshipProperty('BarSet', backref='bar_ranges')
     )
     from_dt: datetime = Field(sa_column=Column(DateTime(timezone=True), nullable=False))
     to_dt: datetime = Field(sa_column=Column(DateTime(timezone=True), nullable=False))
