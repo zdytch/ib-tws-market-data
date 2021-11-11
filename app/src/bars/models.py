@@ -1,7 +1,8 @@
-from common.models import Model
+from common.models import DBModel
 from sqlmodel import Field, Column, Enum, DateTime, ForeignKey, Relationship
 from sqlalchemy import UniqueConstraint, orm
 from instruments.models import Instrument
+from uuid import UUID
 from decimal import Decimal
 from datetime import datetime
 import enum
@@ -18,8 +19,8 @@ class Timeframe(enum.Enum):
     MONTH = 'M'
 
 
-class BarSet(Model, table=True):
-    instrument_id: int = Field(
+class BarSet(DBModel, table=True):
+    instrument_id: UUID = Field(
         sa_column=Column(
             ForeignKey('instrument.id', ondelete='CASCADE'), nullable=False
         )
@@ -30,8 +31,8 @@ class BarSet(Model, table=True):
     timeframe: Timeframe = Field(sa_column=Column(Enum(Timeframe)))
 
 
-class Bar(Model, table=True):
-    bar_set_id: int = Field(
+class Bar(DBModel, table=True):
+    bar_set_id: UUID = Field(
         sa_column=Column(ForeignKey('barset.id', ondelete='CASCADE'), nullable=False)
     )
     bar_set: BarSet = Relationship(
@@ -49,8 +50,8 @@ class Bar(Model, table=True):
     __table_args__ = (UniqueConstraint('bar_set_id', 'timestamp'),)
 
 
-class BarRange(Model, table=True):
-    bar_set_id: int = Field(
+class BarRange(DBModel, table=True):
+    bar_set_id: UUID = Field(
         sa_column=Column(ForeignKey('barset.id', ondelete='CASCADE'), nullable=False)
     )
     bar_set: BarSet = Relationship(

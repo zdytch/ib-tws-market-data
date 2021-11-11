@@ -1,12 +1,12 @@
 from typing import Type, TypeVar, Generic
 from config.db import async_session
-from common.models import Model
+from common.models import DBModel
 from sqlalchemy import update
 from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.exc import NoResultFound
 
-T = TypeVar('T', bound=Model)
+T = TypeVar('T', bound=DBModel)
 
 
 class BaseRepository(Generic[T]):

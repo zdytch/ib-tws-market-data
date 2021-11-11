@@ -1,6 +1,7 @@
-from common.models import Model
+from common.models import DBModel
 from sqlmodel import Field, Column, Enum, DateTime, ForeignKey, Relationship
 from sqlalchemy import UniqueConstraint, orm
+from uuid import UUID
 from decimal import Decimal
 from datetime import datetime
 import enum
@@ -19,7 +20,7 @@ class InstrumentType(enum.Enum):
     FUTURE = 'FUT'
 
 
-class Instrument(Model, table=True):
+class Instrument(DBModel, table=True):
     symbol: str
     ib_symbol: str
     exchange: Exchange = Field(sa_column=Column(Enum(Exchange), nullable=False))
@@ -31,8 +32,8 @@ class Instrument(Model, table=True):
     __table_args__ = (UniqueConstraint('symbol', 'exchange'),)
 
 
-class TradingSession(Model, table=True):
-    instrument_id: int = Field(
+class TradingSession(DBModel, table=True):
+    instrument_id: UUID = Field(
         sa_column=Column(
             ForeignKey('instrument.id', ondelete='CASCADE'), nullable=False
         )

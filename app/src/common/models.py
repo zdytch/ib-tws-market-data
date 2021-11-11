@@ -1,6 +1,6 @@
-from typing import Optional
 from sqlmodel import SQLModel, Field
+from uuid import UUID, uuid4
 
 
-class Model(SQLModel):
-    id: Optional[int] = Field(default=None, primary_key=True)
+class DBModel(SQLModel):
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
