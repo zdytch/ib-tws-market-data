@@ -1,5 +1,5 @@
 from common.models import DBModel
-from sqlmodel import Field, Column, Enum, DateTime, ForeignKey
+from sqlmodel import Field, Column, Enum, DateTime, ForeignKey, Relationship
 from sqlalchemy import UniqueConstraint
 from uuid import UUID
 from decimal import Decimal
@@ -38,6 +38,7 @@ class TradingSession(DBModel, table=True):
             ForeignKey('instrument.id', ondelete='CASCADE'), nullable=False
         )
     )
+    instrument: Instrument = Relationship()
     open_dt: datetime = Field(
         sa_column=Column(DateTime(timezone=True), default=datetime.now, nullable=False)
     )
