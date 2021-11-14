@@ -1,5 +1,5 @@
 from instruments.models import Instrument, TradingSession
-from common.schemas import Range
+from common.schemas import Interval
 from config.db import DB
 from ib.connector import ib_connector
 from datetime import datetime
@@ -16,32 +16,34 @@ async def get_nearest_trading_session(db: DB, instrument: Instrument) -> Trading
         info = await ib_connector.get_instrument_info(
             instrument.symbol, instrument.exchange
         )
-        trading_session.open_dt = info.trading_range.from_dt
-        trading_session.close_dt = info.trading_range.to_dt
+        trading_session.start = info.nearest_session.start
+        trading_session.end = info.nearest_session.end
 
         await db.commit()
 
     return trading_session
 
 
-async def is_overlap_open_session(db: DB, instrument: Instrument, range: Range) -> bool:
+async def is_overlap_open_session(
+    db: DB, instrument: Instrument, interval: Interval
+) -> bool:
     trading_session = await get_nearest_trading_session(db, instrument)
 
     return (
         (
-            range.from_dt >= trading_session.open_dt
-            and range.to_dt < trading_session.close_dt
+            interval.start >= trading_session.start
+            and interval.end < trading_session.end
         )
-        or range.from_dt < trading_session.open_dt < range.to_dt
-        or range.from_dt < trading_session.close_dt < range.to_dt
+        or interval.start < trading_session.start < interval.end
+        or interval.start < trading_session.end < interval.end
     )
 
 
 async def is_session_open(db: DB, instrument: Instrument) -> bool:
     trading_session = await get_nearest_trading_session(db, instrument)
 
-    return trading_session.open_dt <= datetime.now(pytz.utc) < trading_session.close_dt
+    return trading_session.start <= datetime.now(pytz.utc) < trading_session.end
 
 
 def is_session_up_to_date(session: TradingSession) -> bool:
-    return session.close_dt > datetime.now(pytz.utc)
+    return session.end > datetime.now(pytz.utc)

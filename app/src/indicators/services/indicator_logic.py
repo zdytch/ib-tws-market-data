@@ -3,7 +3,7 @@ from bars.models import Timeframe, Bar
 from config.db import DB
 from instruments import services as instrument_services
 from bars import services as bar_services
-from common.schemas import Range
+from common.schemas import Interval
 from common.utils import round_with_quantum
 from datetime import datetime, time, timedelta
 from decimal import Decimal
@@ -20,19 +20,19 @@ async def get_indicator(db: DB, ticker: str, length: int) -> Indicator:
 
     now = datetime.now(pytz.utc)
     if indicator.valid_until <= now:
-        to_dt = pytz.utc.localize(datetime.combine(now.date(), time(0, 0)))
+        end = pytz.utc.localize(datetime.combine(now.date(), time(0, 0)))
         if await instrument_services.is_session_open(db, instrument):
-            to_dt -= timedelta(days=1)
-        from_dt = to_dt - timedelta(days=30)  # TODO Better approach
-        range = Range(from_dt=from_dt, to_dt=to_dt)
+            end -= timedelta(days=1)
+        start = end - timedelta(days=30)  # TODO Better approach
+        interval = Interval(start=start, end=end)
 
-        bars = await bar_services.get_bars(db, bar_set, range)
+        bars = await bar_services.get_bars(db, bar_set, interval)
         trading_session = await instrument_services.get_nearest_trading_session(
             db, instrument
         )
 
         indicator.atr = _calculate_atr(bars, length)
-        indicator.valid_until = trading_session.close_dt
+        indicator.valid_until = trading_session.end
 
         await db.commit()
 

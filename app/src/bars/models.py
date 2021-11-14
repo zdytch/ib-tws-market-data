@@ -46,12 +46,12 @@ class Bar(DBModel, table=True):
     __table_args__ = (UniqueConstraint('bar_set_id', 'timestamp'),)
 
 
-class BarRange(DBModel, table=True):
+class BarInterval(DBModel, table=True):
     bar_set_id: UUID = Field(
         sa_column=Column(ForeignKey('barset.id', ondelete='CASCADE'), nullable=False)
     )
     bar_set: BarSet = Relationship()
-    from_dt: datetime = Field(sa_column=Column(DateTime(timezone=True), nullable=False))
-    to_dt: datetime = Field(sa_column=Column(DateTime(timezone=True), nullable=False))
+    start: datetime = Field(sa_column=Column(DateTime(timezone=True), nullable=False))
+    end: datetime = Field(sa_column=Column(DateTime(timezone=True), nullable=False))
 
-    __table_args__ = (CheckConstraint('from_dt <= to_dt'),)
+    __table_args__ = (CheckConstraint('start <= end'),)

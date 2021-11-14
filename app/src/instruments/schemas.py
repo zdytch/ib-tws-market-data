@@ -24,8 +24,8 @@ class InstrumentList(InstrumentGet):
 
 
 class SessionGet(BaseModel):
-    open_dt: datetime
-    close_dt: datetime
+    start: datetime
+    end: datetime
 
     class Config:
         orm_mode = True

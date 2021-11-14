@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from instruments.models import Exchange, InstrumentType
-from common.schemas import Range
+from common.schemas import Interval
 from decimal import Decimal
 
 
@@ -12,4 +12,4 @@ class InstrumentInfo(BaseModel):
     description: str
     tick_size: Decimal
     multiplier: Decimal
-    trading_range: Range
+    nearest_session: Interval

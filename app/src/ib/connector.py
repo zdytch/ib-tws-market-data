@@ -3,7 +3,7 @@ from ib_insync import IB, Contract
 from instruments.models import Exchange, InstrumentType
 from bars.models import Bar, BarSet
 from .schemas import InstrumentInfo
-from common.schemas import Range
+from common.schemas import Interval
 from decimal import Decimal
 from . import utils
 from common.utils import round_with_quantum
@@ -39,7 +39,7 @@ class IBConnector:
         tick_size = Decimal('0.01') if is_stock else Decimal(str(details[0].minTick))
         multiplier = Decimal('1.00') if is_stock else Decimal(contract.multiplier)
         trading_hours = details[0].liquidHours if is_stock else details[0].tradingHours
-        nearest_trading_range = utils.get_nearest_trading_range(
+        nearest_trading_interval = utils.get_nearest_trading_interval(
             trading_hours, details[0].timeZoneId
         )
 
@@ -51,13 +51,13 @@ class IBConnector:
             description=description,
             tick_size=tick_size,
             multiplier=multiplier,
-            trading_range=nearest_trading_range,
+            nearest_session=nearest_trading_interval,
         )
 
     async def get_historical_bars(
         self,
         bar_set: BarSet,
-        range: Range,
+        interval: Interval,
     ) -> list[Bar]:
         await self._connect()
 
@@ -68,8 +68,8 @@ class IBConnector:
 
         ib_bars = await self._ib.reqHistoricalDataAsync(
             contract=contract,
-            endDateTime=range.to_dt,
-            durationStr=utils.duration_to_ib(range.from_dt, range.to_dt),
+            endDateTime=interval.end,
+            durationStr=utils.duration_to_ib(interval.start, interval.end),
             barSizeSetting=utils.timeframe_to_ib(bar_set.timeframe),
             whatToShow='TRADES',
             useRTH=is_stock,
@@ -82,7 +82,7 @@ class IBConnector:
             tick_size = instrument.tick_size
             timestamp = utils.timestamp_from_ib(ib_bar.date)
 
-            if range.from_dt <= timestamp <= range.to_dt:
+            if interval.start <= timestamp <= interval.end:
                 bar = Bar(
                     bar_set_id=bar_set.id,
                     open=round_with_quantum(Decimal(ib_bar.open), tick_size),

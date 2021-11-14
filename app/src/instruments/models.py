@@ -40,13 +40,13 @@ class TradingSession(DBModel, table=True):
         )
     )
     instrument: Instrument = Relationship()
-    open_dt: datetime = Field(
+    start: datetime = Field(
         sa_column=Column(DateTime(timezone=True), nullable=False),
         default_factory=lambda: pytz.utc.localize(datetime.min),
     )
-    close_dt: datetime = Field(
+    end: datetime = Field(
         sa_column=Column(DateTime(timezone=True), nullable=False),
         default_factory=lambda: pytz.utc.localize(datetime.min),
     )
 
-    _table_args__ = (CheckConstraint('open_dt <= close_dt'),)
+    __table_args__ = (CheckConstraint('start <= end'),)

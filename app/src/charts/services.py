@@ -1,7 +1,7 @@
 from .schemas import History, Info, SearchResult, Config
 from config.db import DB
 from bars.models import Timeframe
-from common.schemas import Range
+from common.schemas import Interval
 from bars import services as bar_services
 from instruments.models import Exchange, InstrumentType
 from instruments import services as instrument_services
@@ -21,10 +21,10 @@ async def get_history(
         instrument = await instrument_services.get_saved_instrument(db, ticker)
         bar_set = await bar_services.get_bar_set(db, instrument, Timeframe(timeframe))
 
-        from_dt = datetime.fromtimestamp(from_t, pytz.utc)
-        to_dt = datetime.fromtimestamp(to_t, pytz.utc)
-        range = Range(from_dt=from_dt, to_dt=to_dt)
-        bars = await bar_services.get_historical_bars(db, bar_set, range)
+        start = datetime.fromtimestamp(from_t, pytz.utc)
+        end = datetime.fromtimestamp(to_t, pytz.utc)
+        interval = Interval(start=start, end=end)
+        bars = await bar_services.get_historical_bars(db, bar_set, interval)
 
         latest_ts = await bar_services.get_latest_timestamp(db, bar_set)
         next_time = int(latest_ts.timestamp())
