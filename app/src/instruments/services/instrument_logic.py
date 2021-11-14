@@ -1,16 +1,16 @@
 from instruments.models import Instrument, Exchange
-from sqlalchemy.ext.asyncio import AsyncSession
+from config.db import DB
 from sqlalchemy.orm.exc import NoResultFound
 from ib.connector import ib_connector
 from . import instrument_crud
 
 
-async def get_saved_instrument(session: AsyncSession, ticker: str) -> Instrument:
+async def get_saved_instrument(db: DB, ticker: str) -> Instrument:
     exchange, symbol = _split_ticker(ticker)
 
     try:
         instrument = await instrument_crud.get_instrument(
-            session,
+            db,
             symbol=symbol,
             exchange=exchange,
         )
@@ -18,7 +18,7 @@ async def get_saved_instrument(session: AsyncSession, ticker: str) -> Instrument
     except NoResultFound:
         info = await ib_connector.get_instrument_info(symbol, exchange)
         instrument = await instrument_crud.create_instrument(
-            session,
+            db,
             info.symbol,
             info.ib_symbol,
             info.exchange,

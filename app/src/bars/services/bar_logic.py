@@ -1,6 +1,6 @@
 from bars.models import BarSet, Bar
 from common.schemas import Range
-from sqlalchemy.ext.asyncio import AsyncSession
+from config.db import DB
 from instruments import services as instrument_services
 from ib.connector import ib_connector
 from datetime import timedelta
@@ -9,9 +9,9 @@ from . import bar_crud, bar_range_crud, bar_range_logic
 
 
 async def get_historical_bars(
-    session: AsyncSession, bar_set: BarSet, range: Range
+    db: DB, bar_set: BarSet, range: Range
 ) -> list[Bar]:
-    existing_ranges = await bar_range_crud.get_bar_ranges(session, bar_set)
+    existing_ranges = await bar_range_crud.get_bar_ranges(db, bar_set)
     missing_ranges = bar_range_logic.calculate_missing_ranges(range, existing_ranges)
     missing_ranges = bar_range_logic.split_ranges(
         missing_ranges, bar_set.timeframe, 100
@@ -21,9 +21,9 @@ async def get_historical_bars(
 
     for missing_range in missing_ranges:
         is_overlap_session = await instrument_services.is_overlap_open_session(
-            session, instrument, missing_range
+            db, instrument, missing_range
         )
-        latest_ts = await bar_crud.get_latest_timestamp(session, bar_set)
+        latest_ts = await bar_crud.get_latest_timestamp(db, bar_set)
 
         # If missing range doesn't overlap with open session range
         if not is_overlap_session:
@@ -47,9 +47,9 @@ async def get_historical_bars(
             live_bar = origin_bars[-1]
             origin_bars.remove(live_bar)
 
-        await bar_crud.bulk_save_bars(session, bar_set, origin_bars)
+        await bar_crud.bulk_save_bars(db, bar_set, origin_bars)
 
-    bars = await bar_crud.get_bars(session, bar_set, range)
+    bars = await bar_crud.get_bars(db, bar_set, range)
     if live_bar:
         bars.append(live_bar)
 

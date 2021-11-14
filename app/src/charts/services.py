@@ -1,5 +1,5 @@
 from .schemas import History, Info, SearchResult, Config
-from config.db import AsyncSession
+from config.db import DB
 from bars.models import Timeframe
 from common.schemas import Range
 from bars import services as bar_services
@@ -11,24 +11,22 @@ import pytz
 
 
 async def get_history(
-    session: AsyncSession, ticker: str, timeframe: str, from_t: int, to_t: int
+    db: DB, ticker: str, timeframe: str, from_t: int, to_t: int
 ) -> History:
     history = History()
     bars = []
     next_time = 0
 
     try:
-        instrument = await instrument_services.get_saved_instrument(session, ticker)
-        bar_set = await bar_services.get_bar_set(
-            session, instrument, Timeframe(timeframe)
-        )
+        instrument = await instrument_services.get_saved_instrument(db, ticker)
+        bar_set = await bar_services.get_bar_set(db, instrument, Timeframe(timeframe))
 
         from_dt = datetime.fromtimestamp(from_t, pytz.utc)
         to_dt = datetime.fromtimestamp(to_t, pytz.utc)
         range = Range(from_dt=from_dt, to_dt=to_dt)
-        bars = await bar_services.get_historical_bars(session, bar_set, range)
+        bars = await bar_services.get_historical_bars(db, bar_set, range)
 
-        latest_ts = await bar_services.get_latest_timestamp(session, bar_set)
+        latest_ts = await bar_services.get_latest_timestamp(db, bar_set)
         next_time = int(latest_ts.timestamp())
 
     except ConnectionRefusedError as error:
@@ -50,7 +48,7 @@ async def get_history(
     return history
 
 
-async def get_info(db: AsyncSession, ticker: str) -> Info:
+async def get_info(db: DB, ticker: str) -> Info:
     info = Info(name=ticker, ticker=ticker)
 
     try:

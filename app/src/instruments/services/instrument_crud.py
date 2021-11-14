@@ -1,11 +1,11 @@
 from instruments.models import Instrument, Exchange, InstrumentType
-from sqlalchemy.ext.asyncio import AsyncSession
+from config.db import DB
 from sqlalchemy.future import select
 from decimal import Decimal
 
 
 async def create_instrument(
-    session: AsyncSession,
+    db: DB,
     symbol: str,
     ib_symbol: str,
     exchange: Exchange,
@@ -23,23 +23,21 @@ async def create_instrument(
         tick_size=tick_size,
         multiplier=multiplier,
     )
-    session.add(instrument)
+    db.add(instrument)
 
-    await session.commit()
+    await db.commit()
 
     return instrument
 
 
-async def get_instrument(
-    session: AsyncSession, symbol: str, exchange: Exchange
-) -> Instrument:
+async def get_instrument(db: DB, symbol: str, exchange: Exchange) -> Instrument:
     query = select(Instrument).filter_by(symbol=symbol, exchange=exchange)
 
-    return (await session.execute(query)).scalar_one()
+    return (await db.execute(query)).scalar_one()
 
 
 async def filter_instruments(
-    session: AsyncSession, symbol: str = None, type: InstrumentType = None
+    db: DB, symbol: str = None, type: InstrumentType = None
 ) -> list[Instrument]:
     query = select(Instrument)
 
@@ -48,4 +46,4 @@ async def filter_instruments(
     if type:
         query = query.filter_by(type=type)
 
-    return (await session.execute(query)).scalars().all()
+    return (await db.execute(query)).scalars().all()

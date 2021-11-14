@@ -1,6 +1,6 @@
 from indicators.models import Indicator
 from bars.models import Timeframe, Bar
-from sqlalchemy.ext.asyncio import AsyncSession
+from config.db import DB
 from instruments import services as instrument_services
 from bars import services as bar_services
 from common.schemas import Range
@@ -11,30 +11,30 @@ import pytz
 from . import indicator_crud
 
 
-async def get_indicator(session: AsyncSession, ticker: str, length: int) -> Indicator:
-    instrument = await instrument_services.get_saved_instrument(session, ticker)
-    bar_set = await bar_services.get_bar_set(session, instrument, Timeframe.DAY)
+async def get_indicator(db: DB, ticker: str, length: int) -> Indicator:
+    instrument = await instrument_services.get_saved_instrument(db, ticker)
+    bar_set = await bar_services.get_bar_set(db, instrument, Timeframe.DAY)
     indicator = await indicator_crud.get_or_create_indicator(
-        session, bar_set=bar_set, length=length
+        db, bar_set=bar_set, length=length
     )
 
     now = datetime.now(pytz.utc)
     if indicator.valid_until <= now:
         to_dt = pytz.utc.localize(datetime.combine(now.date(), time(0, 0)))
-        if await instrument_services.is_session_open(session, instrument):
+        if await instrument_services.is_session_open(db, instrument):
             to_dt -= timedelta(days=1)
         from_dt = to_dt - timedelta(days=30)  # TODO Better approach
         range = Range(from_dt=from_dt, to_dt=to_dt)
 
-        bars = await bar_services.get_bars(session, bar_set, range)
+        bars = await bar_services.get_bars(db, bar_set, range)
         trading_session = await instrument_services.get_nearest_trading_session(
-            session, instrument
+            db, instrument
         )
 
         indicator.atr = _calculate_atr(bars, length)
         indicator.valid_until = trading_session.close_dt
 
-        await session.commit()
+        await db.commit()
 
     return indicator
 

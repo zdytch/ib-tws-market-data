@@ -1,17 +1,17 @@
 from bars.models import BarSet, BarRange, Timeframe
 from common.schemas import Range
-from sqlalchemy.ext.asyncio import AsyncSession
+from config.db import DB
 from sqlalchemy.future import select
 from datetime import timedelta
 import math
 
 
-async def perform_defragmentation(session: AsyncSession, bar_set: BarSet) -> None:
+async def perform_defragmentation(db: DB, bar_set: BarSet) -> None:
     step_size = _get_step_size(bar_set.timeframe)
     ranges_to_delete = []
 
     ranges = (
-        (await session.execute(select(BarRange).where(BarRange.bar_set == bar_set)))
+        (await db.execute(select(BarRange).where(BarRange.bar_set == bar_set)))
         .scalars()
         .all()
     )
@@ -36,7 +36,7 @@ async def perform_defragmentation(session: AsyncSession, bar_set: BarSet) -> Non
                 ranges_to_delete.append(range_b)
 
     for range in ranges_to_delete:
-        await session.delete(range)
+        await db.delete(range)
 
 
 def split_ranges(ranges: list[Range], timeframe: Timeframe, length: int) -> list[Range]:
