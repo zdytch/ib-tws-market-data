@@ -5,6 +5,7 @@ from uuid import UUID
 from decimal import Decimal
 from datetime import datetime
 import enum
+import pytz
 
 
 class Exchange(enum.Enum):
@@ -40,8 +41,10 @@ class TradingSession(DBModel, table=True):
     )
     instrument: Instrument = Relationship()
     open_dt: datetime = Field(
-        sa_column=Column(DateTime(timezone=True), default=datetime.now, nullable=False)
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+        default_factory=lambda: pytz.utc.localize(datetime.min),
     )
     close_dt: datetime = Field(
-        sa_column=Column(DateTime(timezone=True), default=datetime.now, nullable=False)
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+        default_factory=lambda: pytz.utc.localize(datetime.min),
     )

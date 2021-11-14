@@ -1,4 +1,5 @@
 from .schemas import History, Info, SearchResult, Config
+from config.db import AsyncSession
 from bars.models import Timeframe
 from common.schemas import Range
 from bars import services as bar_services
@@ -9,21 +10,25 @@ from loguru import logger
 import pytz
 
 
-async def get_history(ticker: str, timeframe: str, from_t: int, to_t: int) -> History:
+async def get_history(
+    session: AsyncSession, ticker: str, timeframe: str, from_t: int, to_t: int
+) -> History:
     history = History()
     bars = []
     next_time = 0
 
     try:
-        instrument = await instrument_services.get_instrument(ticker)
-        bar_set = await bar_services.get_bar_set(instrument, Timeframe(timeframe))
+        instrument = await instrument_services.get_saved_instrument(session, ticker)
+        bar_set = await bar_services.get_bar_set(
+            session, instrument, Timeframe(timeframe)
+        )
 
         from_dt = datetime.fromtimestamp(from_t, pytz.utc)
         to_dt = datetime.fromtimestamp(to_t, pytz.utc)
         range = Range(from_dt=from_dt, to_dt=to_dt)
-        bars = await bar_services.get_bars(bar_set, range)
+        bars = await bar_services.get_historical_bars(session, bar_set, range)
 
-        latest_ts = await bar_services.get_latest_timestamp(bar_set)
+        latest_ts = await bar_services.get_latest_timestamp(session, bar_set)
         next_time = int(latest_ts.timestamp())
 
     except ConnectionRefusedError as error:
@@ -39,17 +44,17 @@ async def get_history(ticker: str, timeframe: str, from_t: int, to_t: int) -> Hi
 
     if bars:
         history.s = 'ok'
-    elif next_time:
+    elif next_time > 0:
         history.nextTime = next_time
 
     return history
 
 
-async def get_info(ticker: str) -> Info:
+async def get_info(db: AsyncSession, ticker: str) -> Info:
     info = Info(name=ticker, ticker=ticker)
 
     try:
-        instrument = await instrument_services.get_instrument(ticker)
+        instrument = await instrument_services.get_saved_instrument(db, ticker)
         instrument_type = _instrument_type_to_chart(instrument.type)
         timezone, session = _exchange_schedule_to_chart(instrument.exchange)
         price_scale = 10 ** abs(instrument.tick_size.normalize().as_tuple().exponent)
@@ -72,7 +77,7 @@ async def get_info(ticker: str) -> Info:
 
 async def get_search_results(search: str) -> list[SearchResult]:
     results = []
-    instruments = await instrument_services.search_instruments(search)
+    instruments = await instrument_services.search_broker_instruments(search)
 
     for instrument in instruments:
         ticker = f'{instrument.exchange}:{instrument.symbol}'

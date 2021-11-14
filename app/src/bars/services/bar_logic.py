@@ -21,7 +21,7 @@ async def get_historical_bars(
 
     for missing_range in missing_ranges:
         is_overlap_session = await instrument_services.is_overlap_open_session(
-            instrument, missing_range
+            session, instrument, missing_range
         )
         latest_ts = await bar_crud.get_latest_timestamp(session, bar_set)
 
