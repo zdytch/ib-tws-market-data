@@ -4,6 +4,7 @@ from sqlalchemy import UniqueConstraint
 from uuid import UUID
 from decimal import Decimal
 from datetime import datetime
+import pytz
 
 
 class Indicator(DBModel, table=True):
@@ -11,9 +12,10 @@ class Indicator(DBModel, table=True):
         sa_column=Column(ForeignKey('barset.id', ondelete='CASCADE'), nullable=False)
     )
     length: int
-    atr: Decimal
+    atr: Decimal = Decimal('0.0')
     valid_until: datetime = Field(
-        sa_column=Column(DateTime(timezone=True), default=datetime.now, nullable=False)
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+        default_factory=lambda: pytz.utc.localize(datetime.min),
     )
 
     __table_args__ = (UniqueConstraint('bar_set_id', 'length'),)
