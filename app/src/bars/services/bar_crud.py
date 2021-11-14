@@ -36,9 +36,10 @@ async def bulk_save_bars(db: DB, bar_set: BarSet, bars: list[Bar]) -> None:
         bar_values = [bar.dict(exclude_none=True) for bar in bars]
         bar_range = BarRange(bar_set_id=bar_set.id, from_dt=min_ts, to_dt=max_ts)
 
-        async with db.begin():
-            await db.execute(insert(Bar).values(bar_values).on_conflict_do_nothing())
+        await db.execute(insert(Bar).values(bar_values).on_conflict_do_nothing())
 
-            db.add(bar_range)
+        db.add(bar_range)
 
-            await bar_range_logic.perform_defragmentation(db, bar_set)
+        await bar_range_logic.perform_defragmentation(db, bar_set)
+
+        await db.commit()

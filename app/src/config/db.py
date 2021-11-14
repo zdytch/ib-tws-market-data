@@ -9,7 +9,7 @@ Session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 DB = AsyncSession
 
 
-async def get_db() -> DB:
+async def get_db():
     async with Session() as session:
         yield session
 
