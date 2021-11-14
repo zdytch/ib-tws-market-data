@@ -6,6 +6,7 @@ from .schemas import InstrumentInfo
 from common.schemas import Range
 from decimal import Decimal
 from . import utils
+from common.utils import round_with_quantum
 from loguru import logger
 
 
@@ -78,9 +79,20 @@ class IBConnector:
 
         bars = []
         for ib_bar in ib_bars:
-            bar = utils.bar_from_ib(ib_bar, instrument.tick_size, volume_multiplier)
-            if range.from_dt <= bar.timestamp <= range.to_dt:
-                bar.bar_set = bar_set
+            tick_size = instrument.tick_size
+            timestamp = utils.timestamp_from_ib(ib_bar.date)
+
+            if range.from_dt <= timestamp <= range.to_dt:
+                bar = Bar(
+                    bar_set_id=bar_set.id,
+                    open=round_with_quantum(Decimal(ib_bar.open), tick_size),
+                    high=round_with_quantum(Decimal(ib_bar.high), tick_size),
+                    low=round_with_quantum(Decimal(ib_bar.low), tick_size),
+                    close=round_with_quantum(Decimal(ib_bar.close), tick_size),
+                    volume=int(ib_bar.volume) * volume_multiplier,
+                    timestamp=timestamp,
+                )
+
                 bars.append(bar)
 
         return bars

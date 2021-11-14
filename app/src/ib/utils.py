@@ -1,11 +1,8 @@
 from typing import Union, Optional
-from ib_insync import BarData
 from instruments.models import Exchange, InstrumentType
-from bars.models import Bar, Timeframe
+from bars.models import Timeframe
 from common.schemas import Range
-from common.utils import round_with_quantum
 from datetime import datetime, date, time
-from decimal import Decimal
 import math
 import pytz
 
@@ -51,17 +48,6 @@ def timestamp_from_ib(dt: Union[datetime, date]) -> datetime:
         raise ValueError(f'Cannot convert datetime {dt} from IB')
 
     return date_time
-
-
-def bar_from_ib(ib_bar: BarData, tick_size: Decimal, volume_multiplier: int) -> Bar:
-    return Bar(
-        open=round_with_quantum(Decimal(ib_bar.open), tick_size),
-        high=round_with_quantum(Decimal(ib_bar.high), tick_size),
-        low=round_with_quantum(Decimal(ib_bar.low), tick_size),
-        close=round_with_quantum(Decimal(ib_bar.close), tick_size),
-        volume=int(ib_bar.volume) * volume_multiplier,
-        timestamp=timestamp_from_ib(ib_bar.date),
-    )
 
 
 def get_instrument_type_by_exchange(exchange: Exchange) -> InstrumentType:
