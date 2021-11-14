@@ -1,6 +1,6 @@
 from common.models import DBModel
 from sqlmodel import Field, Column, Enum, DateTime, ForeignKey, Relationship
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import UniqueConstraint, CheckConstraint
 from instruments.models import Instrument
 from uuid import UUID
 from decimal import Decimal
@@ -53,3 +53,5 @@ class BarRange(DBModel, table=True):
     bar_set: BarSet = Relationship()
     from_dt: datetime = Field(sa_column=Column(DateTime(timezone=True), nullable=False))
     to_dt: datetime = Field(sa_column=Column(DateTime(timezone=True), nullable=False))
+
+    __table_args__ = (CheckConstraint('from_dt <= to_dt'),)

@@ -1,6 +1,6 @@
 from common.models import DBModel
 from sqlmodel import Field, Column, Enum, DateTime, ForeignKey, Relationship
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import UniqueConstraint, CheckConstraint
 from uuid import UUID
 from decimal import Decimal
 from datetime import datetime
@@ -48,3 +48,5 @@ class TradingSession(DBModel, table=True):
         sa_column=Column(DateTime(timezone=True), nullable=False),
         default_factory=lambda: pytz.utc.localize(datetime.min),
     )
+
+    _table_args__ = (CheckConstraint('open_dt <= close_dt'),)
