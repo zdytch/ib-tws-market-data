@@ -17,7 +17,4 @@ async def get_or_create_trading_session(
 
         await session.commit()
 
-        # query = select(TradingSession).filter_by(instrument=instrument)
-        # trading_session = (await session.execute(query)).scalar_one()
-
     return trading_session
