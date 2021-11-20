@@ -1,6 +1,6 @@
 from common.models import DBModel
 from sqlmodel import Field, Column, Enum, DateTime, ForeignKey, Relationship
-from sqlalchemy import UniqueConstraint, CheckConstraint
+from sqlalchemy import orm, UniqueConstraint, CheckConstraint
 from uuid import UUID
 from decimal import Decimal
 from datetime import datetime
@@ -23,6 +23,11 @@ class InstrumentType(enum.Enum):
 
 class Instrument(DBModel, table=True):
     symbol: str
+    trading_session: 'TradingSession' = Relationship(
+        sa_relationship=orm.RelationshipProperty(
+            'TradingSession', back_populates='instrument', uselist=False
+        )
+    )
     ib_symbol: str
     exchange: Exchange = Field(sa_column=Column(Enum(Exchange), nullable=False))
     type: InstrumentType = Field(sa_column=Column(Enum(InstrumentType), nullable=False))
@@ -39,7 +44,7 @@ class TradingSession(DBModel, table=True):
             ForeignKey('instrument.id', ondelete='CASCADE'), nullable=False
         )
     )
-    instrument: Instrument = Relationship()
+    instrument: Instrument = Relationship(back_populates='trading_session')
     start: datetime = Field(
         sa_column=Column(DateTime(timezone=True), nullable=False),
         default_factory=lambda: pytz.utc.localize(datetime.min),
