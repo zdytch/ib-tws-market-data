@@ -10,6 +10,8 @@ import pytz
 def timeframe_to_ib(timeframe: Timeframe) -> str:
     if timeframe == Timeframe.DAY:
         ib_timeframe = '1 day'
+    elif timeframe == Timeframe.M60:
+        ib_timeframe = '1 hour'
     elif timeframe == Timeframe.M30:
         ib_timeframe = '30 mins'
     elif timeframe == Timeframe.M5:

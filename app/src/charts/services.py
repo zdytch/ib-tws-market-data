@@ -94,7 +94,7 @@ async def get_search_results(search: str) -> list[SearchResult]:
 
 def get_config() -> Config:
     return Config(
-        supported_resolutions=['1', '5', '30', '1D'],
+        supported_resolutions=['1', '5', '30', '60', '1D'],
         supports_search=True,
         supports_group_request=False,
         supports_marks=False,
