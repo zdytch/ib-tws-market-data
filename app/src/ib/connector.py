@@ -30,14 +30,18 @@ class IBConnector:
 
         type = utils.get_instrument_type_by_exchange(exchange)
         is_stock = type == InstrumentType.STOCK
-        tr_symbol, _, tr_description = self._get_special_case_translated_values(
-            symbol, exchange, type
-        )
+        (
+            tr_symbol,
+            tr_multiplier,
+            tr_tick_size,
+            tr_description,
+            _,
+        ) = self._get_special_case_translated_values(symbol, exchange, type)
 
         ib_symbol = tr_symbol or symbol
         description = tr_description or details[0].longName
-        tick_size = Decimal('0.01') if is_stock else Decimal(str(details[0].minTick))
-        multiplier = Decimal('1.00') if is_stock else Decimal(contract.multiplier)
+        multiplier = tr_multiplier or ('1.00' if is_stock else contract.multiplier)
+        tick_size = tr_tick_size or ('0.01' if is_stock else str(details[0].minTick))
         trading_hours = details[0].liquidHours if is_stock else details[0].tradingHours
         nearest_trading_interval = utils.get_nearest_trading_interval(
             trading_hours, details[0].timeZoneId
@@ -49,8 +53,8 @@ class IBConnector:
             exchange=exchange,
             type=type,
             description=description,
-            tick_size=tick_size,
-            multiplier=multiplier,
+            tick_size=Decimal(tick_size),
+            multiplier=Decimal(multiplier),
             nearest_session=nearest_trading_interval,
         )
 
@@ -132,11 +136,15 @@ class IBConnector:
         exchange: Optional[Exchange] = None,
         instrument_type: Optional[InstrumentType] = None,
     ) -> Contract:
-        tr_symbol, tr_multiplier, _ = self._get_special_case_translated_values(
-            symbol, exchange, instrument_type
-        )
+        (
+            tr_symbol,
+            tr_multiplier,
+            _,
+            _,
+            is_contract_spec,
+        ) = self._get_special_case_translated_values(symbol, exchange, instrument_type)
         contract_symbol = tr_symbol or symbol
-        contract_multiplier = tr_multiplier or ''
+        contract_multiplier = tr_multiplier if is_contract_spec else ''
         contract_type = utils.security_type_to_ib(exchange, instrument_type)
 
         if contract_type == 'STK':
@@ -163,18 +171,27 @@ class IBConnector:
         exchange: Optional[Exchange] = None,
         instrument_type: Optional[InstrumentType] = None,
     ) -> tuple:
-        translated_symbol = ''
-        translated_multiplier = ''
-        translated_description = ''
+        tr_symbol = ''
+        tr_multiplier = ''
+        tr_tick_size = ''
+        tr_description = ''
+        is_contract_spec = False
 
         if symbol == 'SIL' and (
             exchange == Exchange.NYMEX or instrument_type == InstrumentType.FUTURE
         ):
-            translated_symbol = 'SI'
-            translated_multiplier = '1000'
-            translated_description = 'Silver Micro Futures'
+            tr_symbol = 'SI'
+            tr_multiplier = '1000'
+            tr_description = 'Silver Micro Futures'
+            is_contract_spec = True
 
-        return translated_symbol, translated_multiplier, translated_description
+        elif symbol in ('ZC', 'ZS', 'ZW') and (
+            exchange == Exchange.ECBOT or instrument_type == InstrumentType.FUTURE
+        ):
+            tr_multiplier = '50'
+            tr_tick_size = '0.25'
+
+        return tr_symbol, tr_multiplier, tr_tick_size, tr_description, is_contract_spec
 
 
 ib_connector = IBConnector()
