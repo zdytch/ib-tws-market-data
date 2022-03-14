@@ -181,7 +181,7 @@ class IBConnector:
             exchange == Exchange.NYMEX or instrument_type == InstrumentType.FUTURE
         ):
             tr_symbol = 'SI'
-            tr_multiplier = Decimal('1000')
+            tr_multiplier = '1000'
             tr_description = 'Silver Micro Futures'
             is_contract_spec = True
 
