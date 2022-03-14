@@ -35,6 +35,7 @@ class IBConnector:
             tr_multiplier,
             tr_tick_size,
             tr_description,
+            _,
         ) = self._get_special_case_translated_values(symbol, exchange, type)
 
         ib_symbol = tr_symbol or symbol
@@ -135,11 +136,15 @@ class IBConnector:
         exchange: Optional[Exchange] = None,
         instrument_type: Optional[InstrumentType] = None,
     ) -> Contract:
-        tr_symbol, tr_multiplier, _, _ = self._get_special_case_translated_values(
-            symbol, exchange, instrument_type
-        )
+        (
+            tr_symbol,
+            tr_multiplier,
+            _,
+            _,
+            is_contract_spec,
+        ) = self._get_special_case_translated_values(symbol, exchange, instrument_type)
         contract_symbol = tr_symbol or symbol
-        contract_multiplier = tr_multiplier or ''
+        contract_multiplier = tr_multiplier if is_contract_spec else ''
         contract_type = utils.security_type_to_ib(exchange, instrument_type)
 
         if contract_type == 'STK':
@@ -170,6 +175,7 @@ class IBConnector:
         tr_multiplier = ''
         tr_tick_size = ''
         tr_description = ''
+        is_contract_spec = False
 
         if symbol == 'SIL' and (
             exchange == Exchange.NYMEX or instrument_type == InstrumentType.FUTURE
@@ -177,6 +183,7 @@ class IBConnector:
             tr_symbol = 'SI'
             tr_multiplier = Decimal('1000')
             tr_description = 'Silver Micro Futures'
+            is_contract_spec = True
 
         elif symbol in ('ZC', 'ZS', 'ZW') and (
             exchange == Exchange.ECBOT or instrument_type == InstrumentType.FUTURE
@@ -184,7 +191,7 @@ class IBConnector:
             tr_multiplier = '50'
             tr_tick_size = '0.25'
 
-        return tr_symbol, tr_multiplier, tr_tick_size, tr_description
+        return tr_symbol, tr_multiplier, tr_tick_size, tr_description, is_contract_spec
 
 
 ib_connector = IBConnector()
