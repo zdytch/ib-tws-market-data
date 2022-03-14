@@ -1,34 +1,40 @@
-from .models import Indicator
+from indicators.models import Indicator
 from bars.models import Timeframe, Bar
+from config.db import DB
 from instruments import services as instrument_services
 from bars import services as bar_services
-from common.schemas import Range
+from common.schemas import Interval
 from common.utils import round_with_quantum
 from datetime import datetime, time, timedelta
 from decimal import Decimal
 import pytz
+from . import indicator_crud
 
 
-async def get_indicator(ticker: str, length: int) -> Indicator:
-    instrument = await instrument_services.get_instrument(ticker)
-    bar_set = await bar_services.get_bar_set(instrument, Timeframe.DAY)
-    indicator = await Indicator.objects.get_or_create(bar_set=bar_set, length=length)
-    await indicator.load()  # TODO: Remove after switching to SQLAlchemy 2.0
+async def get_indicator(db: DB, ticker: str, length: int) -> Indicator:
+    instrument = await instrument_services.get_saved_instrument(db, ticker)
+    bar_set = await bar_services.get_bar_set(db, instrument, Timeframe.DAY)
+    indicator = await indicator_crud.get_or_create_indicator(
+        db, bar_set=bar_set, length=length
+    )
 
     now = datetime.now(pytz.utc)
     if indicator.valid_until <= now:
-        to_dt = pytz.utc.localize(datetime.combine(now.date(), time(0, 0)))
-        if await instrument_services.is_session_open(instrument):
-            to_dt -= timedelta(days=1)
-        from_dt = to_dt - timedelta(days=30)  # TODO Better approach
-        range = Range(from_dt=from_dt, to_dt=to_dt)
+        end = pytz.utc.localize(datetime.combine(now.date(), time(0, 0)))
+        if await instrument_services.is_session_open(db, instrument):
+            end -= timedelta(days=1)
+        start = end - timedelta(days=30)  # TODO Better approach
+        interval = Interval(start=start, end=end)
 
-        bars = await bar_services.get_bars(bar_set, range)
-        session = await instrument_services.get_session(instrument)
+        bars = await bar_services.get_bars(db, bar_set, interval)
+        trading_session = await instrument_services.get_nearest_trading_session(
+            db, instrument
+        )
 
         indicator.atr = _calculate_atr(bars, length)
-        indicator.valid_until = session.close_dt
-        await indicator.update(['atr', 'valid_until'])
+        indicator.valid_until = trading_session.end
+
+        await db.commit()
 
     return indicator
 

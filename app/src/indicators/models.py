@@ -1,16 +1,21 @@
-import ormar
-from config.db import BaseMeta
-from bars.models import BarSet
+from common.models import DBModel
+from sqlmodel import Field, Column, DateTime, ForeignKey
+from sqlalchemy import UniqueConstraint
+from uuid import UUID
 from decimal import Decimal
 from datetime import datetime
+import pytz
 
 
-class Indicator(ormar.Model):
-    id: int = ormar.Integer(primary_key=True)  # type: ignore
-    bar_set: BarSet = ormar.ForeignKey(BarSet, skip_reverse=True, ondelete='CASCADE')
-    length: int = ormar.Integer(minimum=1)  # type: ignore
-    atr: Decimal = ormar.Decimal(max_digits=12, decimal_places=4, minimum=0.0, default=0.0)  # type: ignore
-    valid_until: datetime = ormar.DateTime(timezone=True, default=datetime.now)  # type: ignore
+class Indicator(DBModel, table=True):
+    bar_set_id: UUID = Field(
+        sa_column=Column(ForeignKey('barset.id', ondelete='CASCADE'), nullable=False)
+    )
+    length: int
+    atr: Decimal = Decimal('0.0')
+    valid_until: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+        default_factory=lambda: pytz.utc.localize(datetime.min),
+    )
 
-    class Meta(BaseMeta):
-        constraints = [ormar.UniqueColumns('bar_set', 'length')]
+    __table_args__ = (UniqueConstraint('bar_set_id', 'length'),)

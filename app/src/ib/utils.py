@@ -1,11 +1,8 @@
 from typing import Union, Optional
-from ib_insync import BarData
 from instruments.models import Exchange, InstrumentType
-from bars.models import Bar, Timeframe
-from common.schemas import Range
-from common.utils import round_with_quantum
+from bars.models import Timeframe
+from common.schemas import Interval
 from datetime import datetime, date, time
-from decimal import Decimal
 import math
 import pytz
 
@@ -13,6 +10,8 @@ import pytz
 def timeframe_to_ib(timeframe: Timeframe) -> str:
     if timeframe == Timeframe.DAY:
         ib_timeframe = '1 day'
+    elif timeframe == Timeframe.M60:
+        ib_timeframe = '1 hour'
     elif timeframe == Timeframe.M30:
         ib_timeframe = '30 mins'
     elif timeframe == Timeframe.M5:
@@ -25,8 +24,8 @@ def timeframe_to_ib(timeframe: Timeframe) -> str:
     return ib_timeframe
 
 
-def duration_to_ib(from_dt: datetime, to_dt: datetime) -> str:
-    total_seconds = int((to_dt - from_dt).total_seconds())
+def duration_to_ib(start: datetime, end: datetime) -> str:
+    total_seconds = int((end - start).total_seconds())
     total_days = math.ceil(total_seconds / 86400)  # Seconds in day
     total_years = math.ceil(total_days / 365)  # Days in year
 
@@ -51,17 +50,6 @@ def timestamp_from_ib(dt: Union[datetime, date]) -> datetime:
         raise ValueError(f'Cannot convert datetime {dt} from IB')
 
     return date_time
-
-
-def bar_from_ib(ib_bar: BarData, tick_size: Decimal, volume_multiplier: int) -> Bar:
-    return Bar(
-        open=round_with_quantum(Decimal(ib_bar.open), tick_size),
-        high=round_with_quantum(Decimal(ib_bar.high), tick_size),
-        low=round_with_quantum(Decimal(ib_bar.low), tick_size),
-        close=round_with_quantum(Decimal(ib_bar.close), tick_size),
-        volume=int(ib_bar.volume) * volume_multiplier,
-        timestamp=timestamp_from_ib(ib_bar.date),
-    )
 
 
 def get_instrument_type_by_exchange(exchange: Exchange) -> InstrumentType:
@@ -93,9 +81,9 @@ def security_type_to_ib(
     return sec_type
 
 
-def get_nearest_trading_range(trading_hours: str, tz_id: str) -> Range:
+def get_nearest_trading_interval(trading_hours: str, tz_id: str) -> Interval:
     min_dt = pytz.utc.localize(datetime.min)
-    nearest_range = Range(from_dt=min_dt, to_dt=min_dt)
+    nearest_interval = Interval(start=min_dt, end=min_dt)
     session_tz = pytz.timezone(tz_id)
 
     for ib_session in trading_hours.split(';'):
@@ -104,8 +92,8 @@ def get_nearest_trading_range(trading_hours: str, tz_id: str) -> Range:
             open = session_tz.localize(datetime.strptime(ib_open, '%Y%m%d:%H%M'))
             close = session_tz.localize(datetime.strptime(ib_close, '%Y%m%d:%H%M'))
             if close > datetime.now(pytz.utc):
-                nearest_range.from_dt = open
-                nearest_range.to_dt = close
+                nearest_interval.start = open
+                nearest_interval.end = close
                 break
 
-    return nearest_range
+    return nearest_interval

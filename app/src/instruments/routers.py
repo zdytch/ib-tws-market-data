@@ -1,6 +1,6 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from config.db import DB, get_db
 from fastapi_pagination import Page, paginate
-from ormar import NoMatch
 from .models import InstrumentType
 from .schemas import InstrumentGet, InstrumentList, SessionGet
 from . import services
@@ -12,17 +12,18 @@ instrument_router = APIRouter(tags=['Instruments'])
 async def get_instrument_list(
     search: str = None,
     type: InstrumentType = None,
+    db: DB = Depends(get_db),
 ):
-    instruments = await services.get_instrument_list(search, type)
+    instruments = await services.filter_instruments(db, search, type)
 
     return paginate(instruments)
 
 
 @instrument_router.get('/{ticker}', response_model=InstrumentGet)
-async def get_instrument(ticker: str):
+async def get_instrument(ticker: str, db: DB = Depends(get_db)):
     try:
-        return await services.get_instrument(ticker)
-    except NoMatch:
+        return await services.get_saved_instrument(db, ticker)
+    except:  # TODO: catch business exception
         raise HTTPException(
             status_code=404,
             detail=f'Instrument with ticker {ticker} not found',
@@ -30,11 +31,13 @@ async def get_instrument(ticker: str):
 
 
 @instrument_router.get('/{ticker}/session', response_model=SessionGet)
-async def get_session(ticker: str):
+async def get_trading_session(ticker: str, db: DB = Depends(get_db)):
     try:
-        instrument = await services.get_instrument(ticker)
-        return await services.get_session(instrument)
-    except NoMatch:
+        instrument = await services.get_saved_instrument(db, ticker)
+
+        return await services.get_nearest_trading_session(db, instrument)
+
+    except:  # TODO: catch business exception
         raise HTTPException(
             status_code=404,
             detail=f'Instrument with ticker {ticker} not found',

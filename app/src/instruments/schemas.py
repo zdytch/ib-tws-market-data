@@ -15,11 +15,17 @@ class InstrumentGet(BaseModel):
     sector: Optional[str]
     industry: Optional[str]
 
+    class Config:
+        orm_mode = True
+
 
 class InstrumentList(InstrumentGet):
     pass
 
 
 class SessionGet(BaseModel):
-    open_dt: datetime
-    close_dt: datetime
+    start: datetime
+    end: datetime
+
+    class Config:
+        orm_mode = True
