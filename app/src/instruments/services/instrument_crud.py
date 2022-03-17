@@ -37,7 +37,7 @@ async def get_instrument(db: DB, symbol: str, exchange: Exchange) -> Instrument:
 
 
 async def filter_instruments(
-    db: DB, symbol: str = None, type: InstrumentType = None
+    db: DB, symbol: str | None = None, type: InstrumentType | None = None
 ) -> list[Instrument]:
     query = select(Instrument)
 
