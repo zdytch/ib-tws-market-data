@@ -191,6 +191,12 @@ class IBConnector:
             tr_multiplier = '50'
             tr_tick_size = '0.25'
 
+        elif symbol == 'ZL' and (
+            exchange == Exchange.ECBOT or instrument_type == InstrumentType.FUTURE
+        ):
+            tr_multiplier = '600'
+            tr_tick_size = '0.01'
+
         return tr_symbol, tr_multiplier, tr_tick_size, tr_description, is_contract_spec
 
 
