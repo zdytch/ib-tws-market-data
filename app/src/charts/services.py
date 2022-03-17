@@ -84,7 +84,7 @@ async def get_search_results(search: str) -> list[SearchResult]:
             full_name=ticker,
             ticker=ticker,
             description=instrument.description,
-            exchange=instrument.exchange,
+            exchange=str(instrument.exchange),
             type=_instrument_type_to_chart(instrument.type),
         )
         results.append(result)

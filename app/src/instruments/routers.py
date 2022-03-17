@@ -10,8 +10,8 @@ instrument_router = APIRouter(tags=['Instruments'])
 
 @instrument_router.get('', response_model=Page[InstrumentList])
 async def get_instrument_list(
-    search: str = None,
-    type: InstrumentType = None,
+    search: str | None = None,
+    type: InstrumentType | None = None,
     db: DB = Depends(get_db),
 ):
     instruments = await services.filter_instruments(db, search, type)

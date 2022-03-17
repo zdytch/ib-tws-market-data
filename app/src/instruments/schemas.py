@@ -1,4 +1,3 @@
-from typing import Optional
 from pydantic import BaseModel
 from .models import InstrumentType
 from datetime import datetime
@@ -12,8 +11,8 @@ class InstrumentGet(BaseModel):
     description: str
     tick_size: Decimal
     multiplier: Decimal
-    sector: Optional[str]
-    industry: Optional[str]
+    sector: str | None
+    industry: str | None
 
     class Config:
         orm_mode = True

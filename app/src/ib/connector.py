@@ -1,4 +1,3 @@
-from typing import Optional
 from ib_insync import IB, Contract
 from instruments.models import Exchange, InstrumentType
 from bars.models import Bar, BarSet
@@ -133,8 +132,8 @@ class IBConnector:
     def _get_contract(
         self,
         symbol: str,
-        exchange: Optional[Exchange] = None,
-        instrument_type: Optional[InstrumentType] = None,
+        exchange: Exchange | None = None,
+        instrument_type: InstrumentType | None = None,
     ) -> Contract:
         (
             tr_symbol,
@@ -168,8 +167,8 @@ class IBConnector:
     def _get_special_case_translated_values(
         self,
         symbol: str,
-        exchange: Optional[Exchange] = None,
-        instrument_type: Optional[InstrumentType] = None,
+        exchange: Exchange | None = None,
+        instrument_type: InstrumentType | None = None,
     ) -> tuple:
         tr_symbol = ''
         tr_multiplier = ''
