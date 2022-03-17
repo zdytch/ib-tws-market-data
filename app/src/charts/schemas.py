@@ -1,6 +1,5 @@
 from pydantic import BaseModel
 from decimal import Decimal
-from typing import Optional
 
 
 class History(BaseModel):
@@ -11,7 +10,7 @@ class History(BaseModel):
     v: list[int] = []
     t: list[int] = []
     s: str = 'no_data'
-    nextTime: Optional[int]
+    nextTime: int | None = None
 
 
 class Info(BaseModel):

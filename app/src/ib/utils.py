@@ -1,4 +1,3 @@
-from typing import Union, Optional
 from instruments.models import Exchange, InstrumentType
 from bars.models import Timeframe
 from common.schemas import Interval
@@ -41,7 +40,7 @@ def duration_to_ib(start: datetime, end: datetime) -> str:
     return duration
 
 
-def timestamp_from_ib(dt: Union[datetime, date]) -> datetime:
+def timestamp_from_ib(dt: datetime | date) -> datetime:
     if type(dt) is date:
         date_time = pytz.utc.localize(datetime.combine(dt, time(0, 0)))
     elif type(dt) is datetime:
@@ -64,7 +63,7 @@ def get_instrument_type_by_exchange(exchange: Exchange) -> InstrumentType:
 
 
 def security_type_to_ib(
-    exchange: Optional[Exchange], instrument_type: Optional[InstrumentType]
+    exchange: Exchange | None, instrument_type: InstrumentType | None
 ) -> str:
     if exchange and not instrument_type:
         instrument_type = get_instrument_type_by_exchange(exchange)
