@@ -53,3 +53,16 @@ class TradingSession(DBModel, table=True):
         sa_column=Column(DateTime(timezone=True), nullable=False),
         default_factory=lambda: pytz.utc.localize(datetime.min),
     )
+
+
+class Contract(DBModel, table=True):
+    instrument_id: UUID = Field(
+        sa_column=Column(
+            ForeignKey('instrument.id', ondelete='CASCADE'), nullable=False
+        )
+    )
+    instrument: Instrument = Relationship()
+    ib_id: int
+    expiration: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+    )
