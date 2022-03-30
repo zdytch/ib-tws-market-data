@@ -13,7 +13,7 @@ class Alert(DBModel, table=True):
         )
     )
     instrument: Instrument = Relationship()
-    external_id: int
+    external_id: str
     price: Decimal
 
-    __table_args__ = (UniqueConstraint('instrument_id', 'price'),)
+    __table_args__ = (UniqueConstraint('external_id'),)
