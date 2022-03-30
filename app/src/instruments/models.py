@@ -66,3 +66,5 @@ class Contract(DBModel, table=True):
     expiration: datetime = Field(
         sa_column=Column(DateTime(timezone=True), nullable=False),
     )
+
+    __table_args__ = (UniqueConstraint('ib_id'),)
