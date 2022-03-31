@@ -199,4 +199,4 @@ class IBConnector:
         return tr_symbol, tr_multiplier, tr_tick_size, tr_description, is_contract_spec
 
 
-ib_connector = IBConnector()
+ibc = IBConnector()
