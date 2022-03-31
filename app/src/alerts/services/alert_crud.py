@@ -28,16 +28,21 @@ async def create_alert(db: DB, ticker: str, external_id: str, price: Decimal) ->
 async def bulk_create_alerts(db: DB, alert_schemas: list[AlertCreate]) -> None:
     instruments = (await db.execute(select(Instrument))).scalars().all()
     alert_dicts = [alert.dict(exclude_none=True) for alert in alert_schemas]
+    alerts_to_create = []
 
     for alert_dict in alert_dicts:
         ticker = alert_dict.pop('ticker')
         exchange, symbol = instrument_services.split_ticker(ticker)
         instrument = next(
-            i for i in instruments if i.symbol == symbol and i.exchange == exchange
+            (i for i in instruments if i.symbol == symbol and i.exchange == exchange),
+            None,
         )
-        alert_dict['instrument_id'] = instrument.id
 
-    await db.execute(insert(Alert).values(alert_dicts))
+        if instrument:
+            alert_dict['instrument_id'] = instrument.id
+            alerts_to_create.append(alert_dict)
+
+    await db.execute(insert(Alert).values(alerts_to_create))
     await db.commit()
 
 
