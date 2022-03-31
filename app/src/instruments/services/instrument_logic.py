@@ -5,9 +5,7 @@ from ib.connector import ibc
 from . import instrument_crud
 
 
-async def get_saved_instrument(db: DB, ticker: str) -> Instrument:
-    exchange, symbol = _split_ticker(ticker)
-
+async def get_saved_instrument(db: DB, symbol: str, exchange: Exchange) -> Instrument:
     try:
         instrument = await instrument_crud.get_instrument(
             db,
@@ -50,7 +48,7 @@ async def search_broker_instruments(symbol: str) -> list[Instrument]:
     return instruments
 
 
-def _split_ticker(ticker: str) -> tuple[Exchange, str]:
+def split_ticker(ticker: str) -> tuple[Exchange, str]:
     exchange, symbol = tuple(ticker.split(':'))
     exchange = Exchange(exchange)
 

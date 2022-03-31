@@ -12,7 +12,8 @@ from . import indicator_crud
 
 
 async def get_indicator(db: DB, ticker: str, length: int) -> Indicator:
-    instrument = await instrument_services.get_saved_instrument(db, ticker)
+    exchange, symbol = instrument_services.split_ticker(ticker)
+    instrument = await instrument_services.get_saved_instrument(db, symbol, exchange)
     bar_set = await bar_services.get_bar_set(db, instrument, Timeframe.DAY)
     indicator = await indicator_crud.get_or_create_indicator(
         db, bar_set=bar_set, length=length

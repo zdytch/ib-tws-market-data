@@ -13,7 +13,8 @@ async def get_alert_list(db: DB) -> list[Alert]:
 
 
 async def create_alert(db: DB, ticker: str, external_id: str, price: Decimal) -> Alert:
-    instrument = await instrument_services.get_saved_instrument(db, ticker)
+    exchange, symbol = instrument_services.split_ticker(ticker)
+    instrument = await instrument_services.get_saved_instrument(db, symbol, exchange)
 
     alert = Alert(instrument_id=instrument.id, external_id=external_id, price=price)
     db.add(alert)
