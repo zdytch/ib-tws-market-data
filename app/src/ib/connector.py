@@ -1,7 +1,8 @@
-from ib_insync import IB, Contract
+from typing import Callable, Awaitable
+from ib_insync import IB, Contract, RealTimeBarList
 from instruments.models import Exchange, InstrumentType
 from bars.models import Bar, BarSet
-from .schemas import InstrumentInfo
+from .schemas import InstrumentInfo, BarInfo
 from common.schemas import Interval
 from decimal import Decimal
 from . import utils
@@ -13,6 +14,7 @@ class IBConnector:
     def __init__(self):
         self._ib = IB()
         self._ib.errorEvent += self._error_callback
+        self._ib.barUpdateEvent += self._realtime_bar_callback
 
     @property
     def is_connected(self) -> bool:
@@ -29,6 +31,13 @@ class IBConnector:
     def disconnect(self):
         if self.is_connected:
             self._ib.disconnect()
+
+    def subscribe_callbacks(
+        self,
+        realtime_bar_callback: Callable[[BarInfo], Awaitable] | None = None,
+    ) -> None:
+        if realtime_bar_callback:
+            self.realtime_bar_callback = realtime_bar_callback
 
     async def get_instrument_info(
         self, symbol: str, exchange: Exchange
@@ -205,6 +214,31 @@ class IBConnector:
             tr_tick_size = '0.01'
 
         return tr_symbol, tr_multiplier, tr_tick_size, tr_description, is_contract_spec
+
+    async def _realtime_bar_callback(
+        self, bar_list: RealTimeBarList, has_new_bar: bool
+    ) -> None:
+        contract = bar_list.contract
+        last_bar = bar_list[-1]
+        exchange = (
+            contract.primaryExchange if contract.secType == 'STK' else contract.exchange
+        )
+
+        bar_info = BarInfo(
+            symbol=contract.symbol,
+            exchange=exchange,
+            open=Decimal(str(last_bar.open_)),
+            high=Decimal(str(last_bar.high)),
+            low=Decimal(str(last_bar.low)),
+            close=Decimal(str(last_bar.close)),
+            volume=int(last_bar.volume),
+            timestamp=last_bar.time,
+        )
+
+        logger.debug(f'Realtime bar: {bar_info}')
+
+        if hasattr(self, 'realtime_bar_callback'):
+            await self.realtime_bar_callback(bar_info)
 
 
 ibc = IBConnector()
