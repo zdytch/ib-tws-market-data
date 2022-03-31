@@ -15,6 +15,22 @@ async def connect_brokers() -> None:
     loop.create_task(_keep_ib_connected())
 
 
+async def _connected_callback() -> None:
+    pass
+    # async with Session() as db:
+    #     idea_trades = await trade_services.get_trades_in_idea(db)
+    #     idea_instruments = {trade.instrument for trade in idea_trades}
+
+    #     progress_trades = await trade_services.get_trades_in_progress(db)
+    #     progress_instruments = {trade.instrument for trade in progress_trades}
+
+    #     for instrument in idea_instruments:
+    #         await toggle_realtime_bars(instrument, True)
+
+    #     for instrument in progress_instruments:
+    #         await toggle_realtime_ticks(instrument, True)
+
+
 async def _realtime_bar_callback(bar_info: BarInfo) -> None:
     await _realtime_bar_queue.put(bar_info)
 
@@ -54,5 +70,6 @@ async def _keep_ib_connected() -> None:
 
 
 ibc.subscribe_callbacks(
+    connected_callback=_connected_callback,
     realtime_bar_callback=_realtime_bar_callback,
 )

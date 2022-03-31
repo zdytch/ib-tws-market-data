@@ -14,6 +14,7 @@ class IBConnector:
     def __init__(self):
         self._ib = IB()
         self._ib.errorEvent += self._error_callback
+        self._ib.connectedEvent += self._connected_callback
         self._ib.barUpdateEvent += self._realtime_bar_callback
 
     @property
@@ -34,8 +35,11 @@ class IBConnector:
 
     def subscribe_callbacks(
         self,
+        connected_callback: Callable[[], Awaitable] | None = None,
         realtime_bar_callback: Callable[[BarInfo], Awaitable] | None = None,
     ) -> None:
+        if connected_callback:
+            self.connected_callback = connected_callback
         if realtime_bar_callback:
             self.realtime_bar_callback = realtime_bar_callback
 
@@ -176,10 +180,18 @@ class IBConnector:
             currency='USD',
         )
 
-    def _error_callback(
+    async def _error_callback(
         self, req_id: int, error_code: int, error_string: str, contract: Contract
     ) -> None:
         logger.debug(f'{req_id} {error_code} {error_string} {contract}')
+
+        # if error_code == 10225 and contract:
+        #     await self._toggle_realtime_bars(contract, False)
+        #     await self._toggle_realtime_bars(contract, True)
+
+    async def _connected_callback(self) -> None:
+        if hasattr(self, 'connected_callback'):
+            await self.connected_callback()
 
     def _get_special_case_translated_values(
         self,
