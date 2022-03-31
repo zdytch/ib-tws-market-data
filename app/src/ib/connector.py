@@ -150,6 +150,13 @@ class IBConnector:
 
         return results
 
+    async def toggle_realtime_bars(self, symbol: str, exchange: Exchange, is_on: bool):
+        await self.connect()
+
+        if self.is_connected:
+            contract = self._get_contract(symbol, exchange)
+            self._toggle_realtime_bars(contract, is_on)
+
     def _get_contract(
         self,
         symbol: str,
@@ -180,14 +187,36 @@ class IBConnector:
             currency='USD',
         )
 
+    def _toggle_realtime_bars(self, contract: Contract, is_on: bool):
+        bar_list = self._get_realtime_bar_list(contract)
+        contract = bar_list.contract if bar_list else contract
+
+        if is_on:
+            use_rth = contract.secType == 'FUT'
+            self._ib.reqRealTimeBars(contract, 5, 'TRADES', use_rth)
+
+        elif not is_on and bar_list:
+            self._ib.cancelRealTimeBars(bar_list)
+
+    def _get_realtime_bar_list(self, contract: Contract) -> RealTimeBarList | None:
+        return next(
+            (
+                bar_list
+                for bar_list in self._ib.realtimeBars()
+                if contract.conId == bar_list.contract.conId
+                and isinstance(bar_list, RealTimeBarList)
+            ),
+            None,
+        )
+
     async def _error_callback(
         self, req_id: int, error_code: int, error_string: str, contract: Contract
     ) -> None:
         logger.debug(f'{req_id} {error_code} {error_string} {contract}')
 
-        # if error_code == 10225 and contract:
-        #     await self._toggle_realtime_bars(contract, False)
-        #     await self._toggle_realtime_bars(contract, True)
+        if error_code == 10225 and contract:
+            self._toggle_realtime_bars(contract, False)
+            self._toggle_realtime_bars(contract, True)
 
     async def _connected_callback(self) -> None:
         if hasattr(self, 'connected_callback'):
