@@ -39,10 +39,7 @@ async def _dequeue_realtime_bars() -> None:
 async def _dequeue_bar(bar_info: BarInfo) -> None:
     if datetime.now(timezone.utc) - bar_info.timestamp < timedelta(seconds=10):
         async with Session() as db:
-            instrument = await instrument_services.get_saved_instrument(
-                db, f'{bar_info.exchange}:{bar_info.symbol}'
-            )
-            await alert_services.check_alerts(instrument, bar_info)
+            await alert_services.check_alerts(db, bar_info)
 
 
 async def _keep_ib_connected() -> None:
