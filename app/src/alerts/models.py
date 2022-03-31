@@ -15,5 +15,6 @@ class Alert(DBModel, table=True):
     instrument: Instrument = Relationship()
     external_id: str
     price: Decimal
+    is_triggered: bool = Field(default=False, nullable=False)
 
     __table_args__ = (UniqueConstraint('external_id'),)
