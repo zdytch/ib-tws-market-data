@@ -1,7 +1,9 @@
 from ..models import Alert
+from ..schemas import AlertCreate
 from config.db import DB
-from sqlmodel import select, delete
+from sqlmodel import select, insert, delete
 from sqlalchemy.orm import joinedload
+from instruments.models import Instrument
 from instruments import services as instrument_services
 from decimal import Decimal
 
@@ -21,6 +23,22 @@ async def create_alert(db: DB, ticker: str, external_id: str, price: Decimal) ->
     await db.commit()
 
     return alert
+
+
+async def bulk_create_alerts(db: DB, alert_schemas: list[AlertCreate]) -> None:
+    instruments = (await db.execute(select(Instrument))).scalars().all()
+    alert_dicts = [alert.dict(exclude_none=True) for alert in alert_schemas]
+
+    for alert_dict in alert_dicts:
+        ticker = alert_dict.pop('ticker')
+        exchange, symbol = instrument_services.split_ticker(ticker)
+        instrument = next(
+            i for i in instruments if i.symbol == symbol and i.exchange == exchange
+        )
+        alert_dict['instrument_id'] = instrument.id
+
+    await db.execute(insert(Alert).values(alert_dicts))
+    await db.commit()
 
 
 async def get_alert(db: DB, **kwargs) -> Alert:

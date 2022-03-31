@@ -31,6 +31,18 @@ async def create_alert(schema: AlertCreate, db: DB = Depends(get_db)):
         )
 
 
+@alert_router.post('/bulk', response_model=AlertGet, status_code=201)
+async def bulk_create_alerts(schemas: list[AlertCreate], db: DB = Depends(get_db)):
+    try:
+        await services.bulk_create_alerts(db, schemas)
+
+    except NoResultFound:
+        pass
+
+    except IntegrityError:
+        pass
+
+
 @alert_router.put('/{external_id}', response_model=AlertGet)
 async def update_alert(external_id: str, schema: AlertUpdate, db: DB = Depends(get_db)):
     try:
