@@ -1,6 +1,6 @@
 from ..models import Alert
 from config.db import DB
-from sqlmodel import select
+from sqlmodel import select, delete
 from sqlalchemy.orm import joinedload
 from instruments import services as instrument_services
 from decimal import Decimal
@@ -41,4 +41,11 @@ async def delete_alert(db: DB, external_id: str) -> None:
     alert = await get_alert(db, external_id=external_id)
 
     await db.delete(alert)
+    await db.commit()
+
+
+async def bulk_delete_alerts(db: DB, **kwargs) -> None:
+    query = delete(Alert).filter_by(**kwargs)
+
+    await db.execute(query)
     await db.commit()
