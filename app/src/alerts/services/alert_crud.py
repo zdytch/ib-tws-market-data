@@ -6,8 +6,8 @@ from instruments import services as instrument_services
 from decimal import Decimal
 
 
-async def get_alert_list(db: DB) -> list[Alert]:
-    query = select(Alert).options(joinedload(Alert.instrument))
+async def get_alert_list(db: DB, **kwargs) -> list[Alert]:
+    query = select(Alert).filter_by(**kwargs).options(joinedload(Alert.instrument))
 
     return (await db.execute(query)).scalars().all()
 
