@@ -18,10 +18,22 @@ class IBConnector:
     def is_connected(self) -> bool:
         return self._ib.isConnected()
 
+    async def connect(self, client_id=14):
+        if not self.is_connected:
+            try:
+                await self._ib.connectAsync('trixter-ib', 4002, client_id)
+
+            except Exception as error:
+                logger.error(error)
+
+    def disconnect(self):
+        if self.is_connected:
+            self._ib.disconnect()
+
     async def get_instrument_info(
         self, symbol: str, exchange: Exchange
     ) -> InstrumentInfo:
-        await self._connect()
+        await self.connect()
 
         contract = self._get_contract(symbol, exchange)
         await self._ib.qualifyContractsAsync(contract)
@@ -62,7 +74,7 @@ class IBConnector:
         bar_set: BarSet,
         interval: Interval,
     ) -> list[Bar]:
-        await self._connect()
+        await self.connect()
 
         instrument = bar_set.instrument
         contract = self._get_contract(instrument.symbol, instrument.exchange)
@@ -101,7 +113,7 @@ class IBConnector:
         return bars
 
     async def search_instrument_info(self, symbol: str) -> list[InstrumentInfo]:
-        await self._connect()
+        await self.connect()
 
         results = []
         for type in tuple(InstrumentType):
@@ -124,10 +136,6 @@ class IBConnector:
                         results.append(instrument_info)
 
         return results
-
-    async def _connect(self, client_id=14):
-        if not self.is_connected:
-            await self._ib.connectAsync('trixter-ib', 4002, client_id)
 
     def _get_contract(
         self,
