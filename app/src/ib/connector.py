@@ -267,7 +267,7 @@ class IBConnector:
 
         bar_info = BarInfo(
             symbol=contract.symbol,
-            exchange=exchange,
+            exchange=Exchange(exchange),
             open=Decimal(str(last_bar.open_)),
             high=Decimal(str(last_bar.high)),
             low=Decimal(str(last_bar.low)),

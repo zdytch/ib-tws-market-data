@@ -18,7 +18,7 @@ class InstrumentInfo(BaseModel):
 
 class BarInfo(BaseModel):
     symbol: str
-    exchange: str
+    exchange: Exchange
     open: Decimal
     high: Decimal
     low: Decimal
