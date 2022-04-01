@@ -23,7 +23,8 @@ async def check_alerts(db: DB, bar_info: BarInfo):
         ):
             alert.is_triggered = True
 
-            await _send_message(alert.external_id)
+            message = f'{alert.instrument.exchange.value}:{alert.instrument.symbol} - {alert.price}'
+            await _send_message(message)
 
         elif (
             not _is_near_price(bar_info, alert.price, atr * Decimal('0.20'))
