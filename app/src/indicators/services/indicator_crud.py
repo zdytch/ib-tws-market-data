@@ -8,12 +8,7 @@ from sqlalchemy.orm.exc import NoResultFound
 
 async def get_or_create_indicator(db: DB, bar_set: BarSet, length: int) -> Indicator:
     try:
-        query = (
-            select(Indicator)
-            .filter_by(bar_set_id=bar_set.id, length=length)
-            .options(joinedload(Indicator.bar_set))
-        )
-        indicator = (await db.execute(query)).scalar_one()
+        indicator = await get_indicator(db, bar_set, length)
 
     except NoResultFound:
         indicator = Indicator(bar_set_id=bar_set.id, length=length)
@@ -21,4 +16,16 @@ async def get_or_create_indicator(db: DB, bar_set: BarSet, length: int) -> Indic
 
         await db.commit()
 
+        indicator = await get_indicator(db, bar_set, length)
+
     return indicator
+
+
+async def get_indicator(db: DB, bar_set: BarSet, length: int) -> Indicator:
+    query = (
+        select(Indicator)
+        .filter_by(bar_set_id=bar_set.id, length=length)
+        .options(joinedload(Indicator.bar_set))
+    )
+
+    return (await db.execute(query)).scalar_one()
